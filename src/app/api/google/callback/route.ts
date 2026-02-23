@@ -41,7 +41,20 @@ export async function GET(request: NextRequest) {
     const encryptedAccess = encrypt(tokens.access_token);
     const encryptedRefresh = encrypt(tokens.refresh_token);
 
-    const { error: dbError } = await supabase
+    // First get the admin settings row ID
+    const { data: settings } = await supabase
+      .from("admin_settings")
+      .select("id")
+      .single();
+
+    if (!settings) {
+      console.error("No admin_settings row found");
+      return NextResponse.redirect(
+        `${appUrl}/admin/settings?error=no_settings`
+      );
+    }
+
+    const { error: dbError, data: updated } = await supabase
       .from("admin_settings")
       .update({
         google_access_token: encryptedAccess,
@@ -49,9 +62,12 @@ export async function GET(request: NextRequest) {
         google_token_expires_at: tokens.expiry_date
           ? new Date(tokens.expiry_date).toISOString()
           : null,
-        google_calendar_id: "primary", // Default to primary calendar
+        google_calendar_id: "primary",
       })
-      .not("id", "is", null); // Update the single row
+      .eq("id", settings.id)
+      .select();
+
+    console.log("Token save result:", { dbError, updatedRows: updated?.length });
 
     if (dbError) {
       console.error("Failed to save Google tokens:", dbError);
