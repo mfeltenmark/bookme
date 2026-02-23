@@ -15,7 +15,6 @@ import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, getDay, isSameDay, isBefore, startOfDay,
 } from "date-fns";
-import { sv } from "date-fns/locale";
 
 interface EventTypeInfo {
   id: string; name: string; slug: string; description: string | null;
@@ -52,7 +51,7 @@ export default function BookingPage() {
     fetch(`/api/availability?slug=${slug}`)
       .then((r) => r.json())
       .then((d) => { if (d.error) setError(d.error); else setData(d); })
-      .catch(() => setError("Kunde inte ladda tillgänglighet"))
+      .catch(() => setError("Could not load availability"))
       .finally(() => setLoading(false));
   }, [slug]);
 
@@ -87,11 +86,11 @@ export default function BookingPage() {
         }),
       });
       const result = await res.json();
-      if (!res.ok) { setError(result.error || "Något gick fel"); return; }
+      if (!res.ok) { setError(result.error || "Something went wrong"); return; }
       setBookingResult(result.booking);
       setStep("confirmed");
     } catch {
-      setError("Nätverksfel. Försök igen.");
+      setError("Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -110,8 +109,8 @@ export default function BookingPage() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <Card className="max-w-sm w-full">
           <CardContent className="py-8 text-center">
-            <p className="text-destructive">{error || "Kunde inte hitta mötestypen"}</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.push("/")}>Tillbaka</Button>
+            <p className="text-destructive">{error || "Event type not found"}</p>
+            <Button variant="outline" className="mt-4" onClick={() => router.push("/")}>Back</Button>
           </CardContent>
         </Card>
       </div>
@@ -133,7 +132,7 @@ export default function BookingPage() {
           {step !== "confirmed" && (
             <button onClick={goBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
               <ArrowLeft className="h-4 w-4" />
-              {step === "date" ? "Tillbaka" : step === "time" ? "Välj annat datum" : "Välj annan tid"}
+              {step === "date" ? "Back" : step === "time" ? "Pick another date" : "Pick another time"}
             </button>
           )}
           <div className="flex items-center gap-3">
@@ -159,15 +158,15 @@ export default function BookingPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                 <Check className="h-8 w-8 text-green-600" />
               </div>
-              <h2 className="text-xl font-bold mb-2">Bokning bekräftad!</h2>
-              <p className="text-muted-foreground mb-4">En bekräftelse skickas till {email}</p>
+              <h2 className="text-xl font-bold mb-2">Booking confirmed!</h2>
+              <p className="text-muted-foreground mb-4">A confirmation has been sent to {email}</p>
               <div className="bg-muted/50 rounded-lg p-4 inline-block text-left">
                 <p className="font-medium">{eventType.name}</p>
-                <p className="text-sm text-muted-foreground">{format(selectedSlot.start, "EEEE d MMMM yyyy", { locale: sv })}</p>
+                <p className="text-sm text-muted-foreground">{format(selectedSlot.start, "EEEE, MMMM d, yyyy")}</p>
                 <p className="text-sm text-muted-foreground">{formatTime(selectedSlot.start, timezone)} – {formatTime(selectedSlot.end, timezone)}</p>
                 {bookingResult?.google_meet_link && (
                   <a href={bookingResult.google_meet_link} target="_blank" rel="noopener" className="text-sm text-primary hover:underline mt-2 inline-flex items-center gap-1">
-                    <Video className="h-3 w-3" />Öppna Google Meet
+                    <Video className="h-3 w-3" />Open Google Meet
                   </a>
                 )}
               </div>
@@ -180,26 +179,26 @@ export default function BookingPage() {
           <Card>
             <CardContent className="py-6">
               <div className="bg-muted/50 rounded-lg p-3 mb-6">
-                <p className="text-sm font-medium">{format(selectedSlot.start, "EEEE d MMMM", { locale: sv })}</p>
+                <p className="text-sm font-medium">{format(selectedSlot.start, "EEEE, MMMM d")}</p>
                 <p className="text-sm text-muted-foreground">{formatTime(selectedSlot.start, timezone)} – {formatTime(selectedSlot.end, timezone)}</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Ditt namn *</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Anna Andersson" required />
+                  <Label htmlFor="name">Your name *</Label>
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Smith" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-post *</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="anna@example.com" required />
+                  <Label htmlFor="email">Email *</Label>
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Meddelande (valfritt)</Label>
-                  <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Berätta gärna vad du vill diskutera..." rows={3} />
+                  <Label htmlFor="notes">Message (optional)</Label>
+                  <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Let me know what you'd like to discuss..." rows={3} />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={submitting}>
                   {submitting && <Loader2 className="animate-spin" />}
-                  Bekräfta bokning
+                  Confirm booking
                 </Button>
               </form>
             </CardContent>
@@ -211,7 +210,7 @@ export default function BookingPage() {
           <Card>
             <CardContent className="py-6">
               <h2 className="font-semibold mb-4">
-                {format(new Date(selectedDate + "T12:00:00"), "EEEE d MMMM", { locale: sv })}
+                {format(new Date(selectedDate + "T12:00:00"), "EEEE, MMMM d")}
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {(availability[selectedDate] || []).map((slot, i) => (
@@ -226,7 +225,7 @@ export default function BookingPage() {
                 ))}
               </div>
               {(!availability[selectedDate] || availability[selectedDate].length === 0) && (
-                <p className="text-center text-muted-foreground py-4">Inga lediga tider detta datum</p>
+                <p className="text-center text-muted-foreground py-4">No available times on this date</p>
               )}
             </CardContent>
           </Card>
@@ -240,13 +239,13 @@ export default function BookingPage() {
                 <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <h2 className="font-semibold capitalize">{format(currentMonth, "MMMM yyyy", { locale: sv })}</h2>
+                <h2 className="font-semibold capitalize">{format(currentMonth, "MMMM yyyy")}</h2>
                 <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
               <div className="grid grid-cols-7 gap-1 mb-2">
-                {["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"].map((d) => (
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
                   <div key={d} className="text-center text-xs font-medium text-muted-foreground py-2">{d}</div>
                 ))}
               </div>
@@ -276,13 +275,13 @@ export default function BookingPage() {
                 })}
               </div>
               {Object.keys(availability).length === 0 && (
-                <p className="text-center text-muted-foreground py-6">Inga lediga tider tillgängliga just nu.</p>
+                <p className="text-center text-muted-foreground py-6">No available times right now.</p>
               )}
             </CardContent>
           </Card>
         )}
 
-        <p className="text-center text-xs text-muted-foreground mt-8">Powered by BookMe</p>
+        <p className="text-center text-xs text-muted-foreground mt-8">Powered by Tech &amp; Change</p>
       </div>
     </div>
   );

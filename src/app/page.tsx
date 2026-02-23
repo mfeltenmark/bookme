@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { AdminSettings, EventType } from "@/types";
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 60;
 
 export default async function PublicProfilePage() {
   const supabase = await createServiceRoleClient();
@@ -26,7 +26,6 @@ export default async function PublicProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background">
       <div className="mx-auto max-w-lg px-4 py-16">
-        {/* Profile header */}
         <div className="text-center mb-10">
           {profile?.profile_image_url ? (
             <img
@@ -47,12 +46,11 @@ export default async function PublicProfilePage() {
           )}
         </div>
 
-        {/* Event types */}
         {events.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
               <p className="text-muted-foreground">
-                Inga bokningsbara möten just nu.
+                No available meetings right now.
               </p>
             </CardContent>
           </Card>
@@ -90,7 +88,7 @@ export default async function PublicProfilePage() {
                         </div>
                       </div>
                       <Button variant="outline" size="sm" className="shrink-0">
-                        Boka
+                        Book
                       </Button>
                     </div>
                   </CardContent>
@@ -100,9 +98,8 @@ export default async function PublicProfilePage() {
           </div>
         )}
 
-        {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-12">
-          Powered by BookMe
+          Powered by Tech &amp; Change
         </p>
       </div>
     </div>

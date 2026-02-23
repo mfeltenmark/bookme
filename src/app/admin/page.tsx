@@ -1,6 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Calendar, CalendarClock, Users, Clock } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/utils";
 import type { Booking, EventType } from "@/types";
@@ -8,7 +7,6 @@ import type { Booking, EventType } from "@/types";
 export default async function AdminDashboard() {
   const supabase = await createServerSupabaseClient();
 
-  // Get upcoming bookings
   const { data: bookings } = await supabase
     .from("bookings")
     .select("*, event_type:event_types(*)")
@@ -17,7 +15,6 @@ export default async function AdminDashboard() {
     .order("start_time", { ascending: true })
     .limit(10);
 
-  // Get stats
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
@@ -41,23 +38,17 @@ export default async function AdminDashboard() {
     .single();
 
   const stats = [
-    { label: "Idag", value: todayCount || 0, icon: Calendar },
-    { label: "Denna månad", value: totalBookings || 0, icon: Users },
-    {
-      label: "Aktiv evenemangstyp",
-      value: activeEvent ? activeEvent.name : "Ingen",
-      icon: CalendarClock,
-    },
+    { label: "Today", value: todayCount || 0, icon: Calendar },
+    { label: "This month", value: totalBookings || 0, icon: Users },
+    { label: "Active event type", value: activeEvent ? activeEvent.name : "None", icon: CalendarClock },
   ];
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Överblick av dina bokningar</p>
+        <p className="text-muted-foreground">Overview of your bookings</p>
       </div>
-
-      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.label}>
@@ -71,45 +62,30 @@ export default async function AdminDashboard() {
           </Card>
         ))}
       </div>
-
-      {/* Upcoming bookings */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Kommande bokningar</CardTitle>
-          <CardDescription>Dina nästa möten</CardDescription>
+          <CardTitle className="text-lg">Upcoming bookings</CardTitle>
+          <CardDescription>Your next meetings</CardDescription>
         </CardHeader>
         <CardContent>
           {!bookings?.length ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              Inga kommande bokningar
-            </p>
+            <p className="text-sm text-muted-foreground py-4 text-center">No upcoming bookings</p>
           ) : (
             <div className="space-y-3">
               {(bookings as (Booking & { event_type: EventType })[]).map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
+                <div key={booking.id} className="flex items-center justify-between rounded-lg border p-4">
                   <div className="flex items-center gap-4">
-                    <div
-                      className="h-10 w-1 rounded-full"
-                      style={{ backgroundColor: booking.event_type?.color || "#5e3a8c" }}
-                    />
+                    <div className="h-10 w-1 rounded-full" style={{ backgroundColor: booking.event_type?.color || "#5e3a8c" }} />
                     <div>
                       <p className="font-medium">{booking.invitee_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {booking.event_type?.name} &middot; {booking.invitee_email}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{booking.event_type?.name} &middot; {booking.invitee_email}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {formatDate(new Date(booking.start_time))}
-                    </p>
+                    <p className="text-sm font-medium">{formatDate(new Date(booking.start_time))}</p>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {formatTime(new Date(booking.start_time))} –{" "}
-                      {formatTime(new Date(booking.end_time))}
+                      {formatTime(new Date(booking.start_time))} – {formatTime(new Date(booking.end_time))}
                     </div>
                   </div>
                 </div>

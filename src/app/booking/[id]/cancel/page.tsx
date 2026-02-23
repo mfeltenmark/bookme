@@ -18,7 +18,7 @@ function CancelContent() {
 
   async function handleCancel() {
     if (!token) {
-      setErrorMsg("Ogiltig avbokningslänk");
+      setErrorMsg("Invalid cancellation link");
       setStatus("error");
       return;
     }
@@ -35,14 +35,14 @@ function CancelContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMsg(data.error || "Kunde inte avboka");
+        setErrorMsg(data.error || "Could not cancel booking");
         setStatus("error");
         return;
       }
 
       setStatus("done");
     } catch {
-      setErrorMsg("Nätverksfel. Försök igen.");
+      setErrorMsg("Network error. Please try again.");
       setStatus("error");
     }
   }
@@ -56,16 +56,16 @@ function CancelContent() {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
                 <XCircle className="h-7 w-7 text-destructive" />
               </div>
-              <h1 className="text-xl font-bold mb-2">Avboka möte</h1>
+              <h1 className="text-xl font-bold mb-2">Cancel meeting</h1>
               <p className="text-sm text-muted-foreground mb-6">
-                Är du säker på att du vill avboka ditt möte? Du och arrangören kommer att meddelas.
+                Are you sure you want to cancel this meeting? Both you and the host will be notified.
               </p>
               <div className="flex gap-3 justify-center">
                 <Button variant="destructive" onClick={handleCancel}>
-                  Ja, avboka
+                  Yes, cancel
                 </Button>
                 <Button variant="outline" onClick={() => window.history.back()}>
-                  Nej, behåll
+                  No, keep it
                 </Button>
               </div>
             </>
@@ -74,7 +74,7 @@ function CancelContent() {
           {status === "cancelling" && (
             <>
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Avbokar...</p>
+              <p className="text-muted-foreground">Cancelling...</p>
             </>
           )}
 
@@ -83,13 +83,13 @@ function CancelContent() {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
                 <Check className="h-7 w-7 text-green-600" />
               </div>
-              <h1 className="text-xl font-bold mb-2">Möte avbokat</h1>
+              <h1 className="text-xl font-bold mb-2">Meeting cancelled</h1>
               <p className="text-sm text-muted-foreground mb-4">
-                Ditt möte har avbokats. En bekräftelse skickas till din e-post.
+                Your meeting has been cancelled. A confirmation will be sent to your email.
               </p>
               <Button variant="outline" onClick={() => (window.location.href = "/")}>
                 <Calendar className="h-4 w-4" />
-                Boka en ny tid
+                Book a new time
               </Button>
             </>
           )}
@@ -99,10 +99,10 @@ function CancelContent() {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
                 <XCircle className="h-7 w-7 text-destructive" />
               </div>
-              <h1 className="text-xl font-bold mb-2">Något gick fel</h1>
+              <h1 className="text-xl font-bold mb-2">Something went wrong</h1>
               <p className="text-sm text-destructive mb-4">{errorMsg}</p>
               <Button variant="outline" onClick={() => setStatus("confirm")}>
-                Försök igen
+                Try again
               </Button>
             </>
           )}

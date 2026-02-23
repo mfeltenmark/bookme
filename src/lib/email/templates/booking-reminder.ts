@@ -10,13 +10,8 @@ interface ReminderParams {
   cancelUrl: string;
 }
 
-export function bookingReminderEmail(params: ReminderParams): {
-  subject: string;
-  html: string;
-} {
-  const { inviteeName, eventName, dateStr, timeStr, timezone, meetLink, cancelUrl } =
-    params;
-
+export function bookingReminderEmail(params: ReminderParams): { subject: string; html: string } {
+  const { inviteeName, eventName, dateStr, timeStr, timezone, meetLink, cancelUrl } = params;
   const firstName = inviteeName.split(" ")[0];
 
   const infoLines = [
@@ -24,31 +19,20 @@ export function bookingReminderEmail(params: ReminderParams): {
     `📅 ${dateStr}`,
     `🕐 ${timeStr} (${timezone})`,
   ];
-
   if (meetLink) {
-    infoLines.push(
-      `📹 <a href="${meetLink}" style="color:#5e3a8c;text-decoration:underline">Anslut via Google Meet</a>`
-    );
+    infoLines.push(`📹 <a href="${meetLink}" style="color:#5e3a8c;text-decoration:underline">Join via Google Meet</a>`);
   }
 
   const html = emailLayout({
-    preheader: `Påminnelse: ${eventName} imorgon ${timeStr}`,
+    preheader: `Reminder: ${eventName} tomorrow at ${timeStr}`,
     children: `
-      <h1 style="margin:0 0 8px;font-size:22px;color:#1f2937">Påminnelse om ditt möte</h1>
-      <p style="margin:0 0 20px;font-size:15px;color:${MUTED}">
-        Hej ${firstName}, bara en påminnelse om ditt kommande möte.
-      </p>
+      <h1 style="margin:0 0 8px;font-size:22px;color:#1f2937">Meeting reminder</h1>
+      <p style="margin:0 0 20px;font-size:15px;color:${MUTED}">Hi ${firstName}, just a reminder about your upcoming meeting.</p>
       ${emailInfoBox(infoLines)}
-      ${meetLink ? emailButton("Öppna Google Meet", meetLink) : ""}
-      <p style="margin:24px 0 0;font-size:13px;color:${MUTED}">
-        Kan du inte längre? 
-        <a href="${cancelUrl}" style="color:#5e3a8c;text-decoration:underline">Avboka mötet</a>
-      </p>
+      ${meetLink ? emailButton("Open Google Meet", meetLink) : ""}
+      <p style="margin:24px 0 0;font-size:13px;color:${MUTED}">Can't make it? <a href="${cancelUrl}" style="color:#5e3a8c;text-decoration:underline">Cancel this meeting</a></p>
     `,
   });
 
-  return {
-    subject: `Påminnelse: ${eventName} – ${dateStr} ${timeStr}`,
-    html,
-  };
+  return { subject: `Reminder: ${eventName} – ${dateStr} ${timeStr}`, html };
 }

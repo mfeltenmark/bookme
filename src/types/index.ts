@@ -32,9 +32,9 @@ export interface EventType {
 export interface AvailabilityRule {
   id: string;
   event_type_id: string;
-  day_of_week: number; // 0=Mon, 6=Sun
-  start_time: string; // "09:00"
-  end_time: string; // "17:00"
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
 }
 
 export interface Booking {
@@ -52,7 +52,6 @@ export interface Booking {
   cancellation_token: string;
   created_at: string;
   cancelled_at: string | null;
-  // Joined
   event_type?: EventType;
 }
 
@@ -90,18 +89,18 @@ export interface TimeSlot {
 }
 
 export interface DayAvailability {
-  date: string; // YYYY-MM-DD
+  date: string;
   slots: TimeSlot[];
 }
 
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export const DAY_NAMES: Record<DayOfWeek, string> = {
-  0: "Måndag",
-  1: "Tisdag",
-  2: "Onsdag",
-  3: "Torsdag",
-  4: "Fredag",
-  5: "Lördag",
-  6: "Söndag",
+  0: "Monday",
+  1: "Tuesday",
+  2: "Wednesday",
+  3: "Thursday",
+  4: "Friday",
+  5: "Saturday",
+  6: "Sunday",
 };

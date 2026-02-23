@@ -37,9 +37,11 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createServiceRoleClient();
 
+    // Encrypt tokens before saving
     const encryptedAccess = encrypt(tokens.access_token);
     const encryptedRefresh = encrypt(tokens.refresh_token);
 
+    // First get the admin settings row ID
     const { data: settings, error: selectError } = await supabase
       .from("admin_settings")
       .select("id")

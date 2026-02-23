@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BookMe – Boka möte med Mikael Feltenmark",
-  description: "Välj en tid som passar dig och boka ett möte direkt.",
+  title: "BookMe – Book a meeting with Mikael Feltenmark",
+  description: "Pick a time that works for you and book a meeting directly.",
   icons: { icon: "/favicon.ico" },
 };
 
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sv">
+    <html lang="en">
       <body className="antialiased min-h-screen">{children}</body>
     </html>
   );

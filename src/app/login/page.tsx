@@ -43,23 +43,23 @@ function LoginForm() {
             <Calendar className="h-6 w-6 text-primary" />
           </div>
           <CardTitle className="text-xl">BookMe Admin</CardTitle>
-          <CardDescription>Logga in för att hantera dina bokningar</CardDescription>
+          <CardDescription>Sign in to manage your bookings</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-post</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="din@email.se"
+                placeholder="you@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Lösenord</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -73,7 +73,7 @@ function LoginForm() {
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="animate-spin" />}
-              Logga in
+              Sign in
             </Button>
           </form>
         </CardContent>
