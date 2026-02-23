@@ -37,18 +37,18 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createServiceRoleClient();
 
-    // Encrypt tokens before saving
     const encryptedAccess = encrypt(tokens.access_token);
     const encryptedRefresh = encrypt(tokens.refresh_token);
 
-    // First get the admin settings row ID
-    const { data: settings } = await supabase
+    const { data: settings, error: selectError } = await supabase
       .from("admin_settings")
       .select("id")
       .single();
 
+    console.log("Admin settings lookup:", { settings, selectError });
+
     if (!settings) {
-      console.error("No admin_settings row found");
+      console.error("No admin_settings row found. Select error:", selectError);
       return NextResponse.redirect(
         `${appUrl}/admin/settings?error=no_settings`
       );
