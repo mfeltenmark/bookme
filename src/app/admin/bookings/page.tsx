@@ -7,9 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Loader2, Trash2, Video } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/utils";
-import type { Booking, EventType } from "@/types";
+import type { Booking, BookingAnswer, EventType } from "@/types";
 
-type BookingWithEvent = Booking & { event_type: EventType };
+type BookingWithEvent = Booking & { event_type: EventType; booking_answers?: BookingAnswer[] };
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<BookingWithEvent[]>([]);
@@ -19,7 +19,7 @@ export default function BookingsPage() {
 
   const loadBookings = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from("bookings").select("*, event_type:event_types(*)").order("start_time", { ascending: filter === "upcoming" });
+    let query = supabase.from("bookings").select("*, event_type:event_types(*), booking_answers(*)").order("start_time", { ascending: filter === "upcoming" });
     const now = new Date().toISOString();
     if (filter === "upcoming") query = query.eq("status", "confirmed").gte("start_time", now);
     else if (filter === "past") query = query.eq("status", "confirmed").lt("start_time", now);
@@ -76,6 +76,15 @@ export default function BookingsPage() {
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTime(new Date(booking.start_time))} – {formatTime(new Date(booking.end_time))}</span>
                       </div>
                       {booking.invitee_notes && <p className="text-sm mt-1 bg-muted/50 rounded px-2 py-1">{booking.invitee_notes}</p>}
+                      {booking.booking_answers && booking.booking_answers.length > 0 && (
+                        <div className="mt-2 space-y-0.5">
+                          {booking.booking_answers.map((a) => (
+                            <p key={a.id} className="text-xs text-muted-foreground">
+                              <span className="font-medium">{a.question_label}:</span> {a.answer}
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

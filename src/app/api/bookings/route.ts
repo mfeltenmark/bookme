@@ -6,6 +6,12 @@ import { bookingConfirmationEmail } from "@/lib/email/templates/booking-confirma
 import { formatEmailDate, formatEmailTime, getCancelUrl } from "@/lib/email/helpers";
 import { z } from "zod";
 
+const answerSchema = z.object({
+  question_id: z.string().uuid(),
+  question_label: z.string(),
+  answer: z.string(),
+});
+
 const bookingSchema = z.object({
   event_type_id: z.string().uuid(),
   invitee_name: z.string().min(1, "Name is required"),
@@ -13,6 +19,7 @@ const bookingSchema = z.object({
   invitee_notes: z.string().optional(),
   start_time: z.string().datetime(),
   end_time: z.string().datetime(),
+  answers: z.array(answerSchema).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -21,48 +28,128 @@ export async function POST(request: NextRequest) {
     const parsed = bookingSchema.parse(body);
     const supabase = await createServiceRoleClient();
 
-    const { data: eventType } = await supabase.from("event_types").select("*").eq("id", parsed.event_type_id).eq("is_active", true).single();
+    const { data: eventType } = await supabase
+      .from("event_types")
+      .select("*")
+      .eq("id", parsed.event_type_id)
+      .eq("is_active", true)
+      .single();
+
     if (!eventType) return NextResponse.json({ error: "Event type not found" }, { status: 404 });
 
-    const { data: conflicts } = await supabase.from("bookings").select("id").eq("status", "confirmed").lt("start_time", parsed.end_time).gt("end_time", parsed.start_time);
-    if (conflicts && conflicts.length > 0) return NextResponse.json({ error: "This time slot is already booked. Please choose another time." }, { status: 409 });
+    // Check for conflicts
+    const { data: conflicts } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("status", "confirmed")
+      .lt("start_time", parsed.end_time)
+      .gt("end_time", parsed.start_time);
 
+    if (conflicts && conflicts.length > 0) {
+      return NextResponse.json({ error: "This time slot is already booked. Please choose another time." }, { status: 409 });
+    }
+
+    // Build calendar event description with answers
+    let description = parsed.invitee_notes
+      ? `Message from ${parsed.invitee_name}:\n${parsed.invitee_notes}`
+      : `Booking via BookMe`;
+
+    if (parsed.answers && parsed.answers.length > 0) {
+      description += "\n\n--- Booking details ---\n";
+      for (const a of parsed.answers) {
+        description += `${a.question_label}: ${a.answer}\n`;
+      }
+    }
+
+    // Create Google Calendar event
     let googleEventId: string | null = null;
     let googleMeetLink: string | null = null;
 
     const calResult = await createCalendarEvent({
       summary: `${eventType.name} with ${parsed.invitee_name}`,
-      description: parsed.invitee_notes ? `Message from ${parsed.invitee_name}:\n${parsed.invitee_notes}` : `Booking via BookMe`,
+      description,
       startTime: parsed.start_time,
       endTime: parsed.end_time,
       attendeeEmail: parsed.invitee_email,
       attendeeName: parsed.invitee_name,
     });
 
-    if (calResult) { googleEventId = calResult.eventId; googleMeetLink = calResult.meetLink; }
+    if (calResult) {
+      googleEventId = calResult.eventId;
+      googleMeetLink = calResult.meetLink;
+    }
 
-    const { data: booking, error } = await supabase.from("bookings").insert({
-      event_type_id: parsed.event_type_id, invitee_name: parsed.invitee_name, invitee_email: parsed.invitee_email,
-      invitee_notes: parsed.invitee_notes || null, start_time: parsed.start_time, end_time: parsed.end_time,
-      status: "confirmed", google_event_id: googleEventId, google_meet_link: googleMeetLink,
-    }).select().single();
+    // Create booking
+    const { data: booking, error } = await supabase
+      .from("bookings")
+      .insert({
+        event_type_id: parsed.event_type_id,
+        invitee_name: parsed.invitee_name,
+        invitee_email: parsed.invitee_email,
+        invitee_notes: parsed.invitee_notes || null,
+        start_time: parsed.start_time,
+        end_time: parsed.end_time,
+        status: "confirmed",
+        google_event_id: googleEventId,
+        google_meet_link: googleMeetLink,
+      })
+      .select()
+      .single();
 
-    if (error) { console.error("Booking creation error:", error); return NextResponse.json({ error: "Could not create booking" }, { status: 500 }); }
+    if (error) {
+      console.error("Booking creation error:", error);
+      return NextResponse.json({ error: "Could not create booking" }, { status: 500 });
+    }
 
-    const { data: adminSettings } = await supabase.from("admin_settings").select("timezone").single();
+    // Save custom question answers
+    if (parsed.answers && parsed.answers.length > 0) {
+      const answerRows = parsed.answers.map((a) => ({
+        booking_id: booking.id,
+        question_id: a.question_id,
+        question_label: a.question_label,
+        answer: a.answer,
+      }));
+
+      const { error: answersError } = await supabase
+        .from("booking_answers")
+        .insert(answerRows);
+
+      if (answersError) {
+        console.error("Failed to save booking answers:", answersError);
+      }
+    }
+
+    // Send confirmation email
+    const { data: adminSettings } = await supabase
+      .from("admin_settings")
+      .select("timezone")
+      .single();
+
     const tz = adminSettings?.timezone || "Europe/Stockholm";
     const cancelUrl = getCancelUrl(booking.id, booking.cancellation_token);
 
     const emailContent = bookingConfirmationEmail({
-      inviteeName: parsed.invitee_name, eventName: eventType.name,
-      dateStr: formatEmailDate(parsed.start_time, tz), timeStr: formatEmailTime(parsed.start_time, parsed.end_time, tz),
-      timezone: tz, meetLink: googleMeetLink, cancelUrl,
+      inviteeName: parsed.invitee_name,
+      eventName: eventType.name,
+      dateStr: formatEmailDate(parsed.start_time, tz),
+      timeStr: formatEmailTime(parsed.start_time, parsed.end_time, tz),
+      timezone: tz,
+      meetLink: googleMeetLink,
+      cancelUrl,
+      confirmationMessage: eventType.confirmation_message,
+      answers: parsed.answers,
     });
 
     await sendEmail({ to: parsed.invitee_email, subject: emailContent.subject, html: emailContent.html });
 
     return NextResponse.json({
-      booking: { id: booking.id, start_time: booking.start_time, end_time: booking.end_time, google_meet_link: booking.google_meet_link, cancellation_token: booking.cancellation_token },
+      booking: {
+        id: booking.id,
+        start_time: booking.start_time,
+        end_time: booking.end_time,
+        google_meet_link: booking.google_meet_link,
+        cancellation_token: booking.cancellation_token,
+      },
       message: "Booking confirmed!",
     });
   } catch (err) {

@@ -13,10 +13,10 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createServiceRoleClient();
 
-  // Get event type with availability rules
+  // Get event type with availability rules and custom questions
   const { data: eventType, error: etError } = await supabase
     .from("event_types")
-    .select("*, availability_rules(*)")
+    .select("*, availability_rules(*), custom_questions(*)")
     .eq("slug", slug)
     .eq("is_active", true)
     .single();
@@ -66,6 +66,11 @@ export async function GET(request: NextRequest) {
     busySlots,
   });
 
+  // Sort custom questions by sort_order
+  const questions = (eventType.custom_questions || []).sort(
+    (a: any, b: any) => a.sort_order - b.sort_order
+  );
+
   return NextResponse.json({
     eventType: {
       id: eventType.id,
@@ -75,7 +80,9 @@ export async function GET(request: NextRequest) {
       duration_minutes: eventType.duration_minutes,
       color: eventType.color,
       location_type: eventType.location_type,
+      confirmation_message: eventType.confirmation_message,
     },
+    customQuestions: questions,
     timezone: settings.timezone,
     availability,
   });

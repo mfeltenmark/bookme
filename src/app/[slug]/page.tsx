@@ -15,14 +15,17 @@ import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, getDay, isSameDay, isBefore, startOfDay,
 } from "date-fns";
+import type { CustomQuestion } from "@/types";
 
 interface EventTypeInfo {
   id: string; name: string; slug: string; description: string | null;
   duration_minutes: number; color: string; location_type: string;
+  confirmation_message: string | null;
 }
 
 interface AvailabilityData {
   eventType: EventTypeInfo;
+  customQuestions: CustomQuestion[];
   timezone: string;
   availability: Record<string, { start: string; end: string }[]>;
 }
@@ -44,13 +47,23 @@ export default function BookingPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [bookingResult, setBookingResult] = useState<{ id: string; google_meet_link?: string } | null>(null);
 
   useEffect(() => {
     fetch(`/api/availability?slug=${slug}`)
       .then((r) => r.json())
-      .then((d) => { if (d.error) setError(d.error); else setData(d); })
+      .then((d) => {
+        if (d.error) setError(d.error);
+        else {
+          setData(d);
+          // Initialize answers for all questions
+          const init: Record<string, string> = {};
+          (d.customQuestions || []).forEach((q: CustomQuestion) => { init[q.id] = ""; });
+          setAnswers(init);
+        }
+      })
       .catch(() => setError("Could not load availability"))
       .finally(() => setLoading(false));
   }, [slug]);
@@ -67,11 +80,34 @@ export default function BookingPage() {
     setStep("time");
   }
 
+  function updateAnswer(questionId: string, value: string) {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  }
+
+  function isFormValid(): boolean {
+    if (!name || !email) return false;
+    if (!data) return false;
+    for (const q of data.customQuestions) {
+      if (q.is_required && !answers[q.id]?.trim()) return false;
+    }
+    return true;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedSlot || !data) return;
     setSubmitting(true);
     setError(null);
+
+    // Build answers array
+    const answersList = data.customQuestions
+      .filter((q) => answers[q.id]?.trim())
+      .map((q) => ({
+        question_id: q.id,
+        question_label: q.label,
+        answer: answers[q.id].trim(),
+      }));
+
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -83,6 +119,7 @@ export default function BookingPage() {
           invitee_notes: notes || undefined,
           start_time: selectedSlot.start.toISOString(),
           end_time: selectedSlot.end.toISOString(),
+          answers: answersList.length > 0 ? answersList : undefined,
         }),
       });
       const result = await res.json();
@@ -117,7 +154,7 @@ export default function BookingPage() {
     );
   }
 
-  const { eventType, timezone, availability } = data;
+  const { eventType, customQuestions, timezone, availability } = data;
   const availableDates = new Set(Object.keys(availability));
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -170,6 +207,14 @@ export default function BookingPage() {
                   </a>
                 )}
               </div>
+              {/* Custom confirmation message */}
+              {eventType.confirmation_message && (
+                <div className="mt-6 mx-auto max-w-sm bg-green-50 border border-green-200 rounded-lg p-4 text-left">
+                  {eventType.confirmation_message.split("\n").map((line, i) => (
+                    <p key={i} className="text-sm text-green-900 mb-1 last:mb-0">{line}</p>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -191,12 +236,65 @@ export default function BookingPage() {
                   <Label htmlFor="email">Email *</Label>
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" required />
                 </div>
+
+                {/* Custom questions */}
+                {customQuestions.map((q) => (
+                  <div key={q.id} className="space-y-2">
+                    <Label htmlFor={`q-${q.id}`}>
+                      {q.label} {q.is_required && "*"}
+                    </Label>
+                    {q.field_type === "text" && (
+                      <Input
+                        id={`q-${q.id}`}
+                        value={answers[q.id] || ""}
+                        onChange={(e) => updateAnswer(q.id, e.target.value)}
+                        placeholder={q.placeholder || ""}
+                        required={q.is_required}
+                      />
+                    )}
+                    {q.field_type === "number" && (
+                      <Input
+                        id={`q-${q.id}`}
+                        type="number"
+                        value={answers[q.id] || ""}
+                        onChange={(e) => updateAnswer(q.id, e.target.value)}
+                        placeholder={q.placeholder || ""}
+                        required={q.is_required}
+                      />
+                    )}
+                    {q.field_type === "textarea" && (
+                      <Textarea
+                        id={`q-${q.id}`}
+                        value={answers[q.id] || ""}
+                        onChange={(e) => updateAnswer(q.id, e.target.value)}
+                        placeholder={q.placeholder || ""}
+                        rows={3}
+                        required={q.is_required}
+                      />
+                    )}
+                    {q.field_type === "select" && q.options && (
+                      <select
+                        id={`q-${q.id}`}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={answers[q.id] || ""}
+                        onChange={(e) => updateAnswer(q.id, e.target.value)}
+                        required={q.is_required}
+                      >
+                        <option value="">{q.placeholder || "Select..."}</option>
+                        {q.options.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                ))}
+
                 <div className="space-y-2">
                   <Label htmlFor="notes">Message (optional)</Label>
                   <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Let me know what you'd like to discuss..." rows={3} />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" className="w-full" disabled={submitting}>
+                <Button type="submit" className="w-full" disabled={submitting || !isFormValid()}>
                   {submitting && <Loader2 className="animate-spin" />}
                   Confirm booking
                 </Button>

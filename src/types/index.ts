@@ -25,6 +25,7 @@ export interface EventType {
   location_type: string;
   buffer_before_minutes: number;
   buffer_after_minutes: number;
+  confirmation_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +36,27 @@ export interface AvailabilityRule {
   day_of_week: number;
   start_time: string;
   end_time: string;
+}
+
+export interface CustomQuestion {
+  id: string;
+  event_type_id: string;
+  label: string;
+  field_type: "text" | "textarea" | "select" | "number";
+  placeholder: string | null;
+  options: string[] | null;
+  is_required: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface BookingAnswer {
+  id: string;
+  booking_id: string;
+  question_id: string;
+  question_label: string;
+  answer: string;
+  created_at: string;
 }
 
 export interface Booking {
