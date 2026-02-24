@@ -143,7 +143,6 @@ export default function EventTypesPage() {
   }
 
   async function toggleActive(et: EventType) {
-    if (!et.is_active) await supabase.from("event_types").update({ is_active: false }).neq("id", et.id);
     await supabase.from("event_types").update({ is_active: !et.is_active }).eq("id", et.id);
     loadEventTypes();
   }
