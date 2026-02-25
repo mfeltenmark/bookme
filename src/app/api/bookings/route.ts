@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sendBookingToCRM } from '@/lib/webhooks/crm-sync'
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createCalendarEvent } from "@/lib/google/calendar";
 import { sendEmail } from "@/lib/email/send";
@@ -100,6 +101,24 @@ export async function POST(request: NextRequest) {
       console.error("Booking creation error:", error);
       return NextResponse.json({ error: "Could not create booking" }, { status: 500 });
     }
+
+    // Sync to CRM (non-blocking)
+    sendBookingToCRM({
+      bookingId: booking.id,
+      eventType: 'workshop', // TODO: Hämta från event_type_id
+      name: booking.invitee_name,
+      email: booking.invitee_email,
+      phone: undefined,
+      company: undefined,
+      scheduledDate: booking.start_time,
+      duration: Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000),
+      meetingUrl: booking.google_meet_link || undefined,
+      notes: booking.invitee_notes || undefined,
+      source: 'bookme',
+      createdAt: new Date().toISOString(),
+    }).catch(error => {
+      console.error('CRM sync failed:', error)
+    })
 
     // Save custom question answers
     if (parsed.answers && parsed.answers.length > 0) {
