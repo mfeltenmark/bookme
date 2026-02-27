@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     // Sync to CRM (non-blocking)
     sendBookingToCRM({
       bookingId: booking.id,
-      eventType: 'workshop', // TODO: Hämta från event_type_id
+      eventType: eventType.slug || eventType.name,
       name: booking.invitee_name,
       email: booking.invitee_email,
       phone: undefined,
