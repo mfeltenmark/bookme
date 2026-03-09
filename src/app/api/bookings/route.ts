@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
       notes: booking.invitee_notes || undefined,
       source: 'bookme',
       createdAt: new Date().toISOString(),
+    })
 
     // Save custom question answers
     if (parsed.answers && parsed.answers.length > 0) {
