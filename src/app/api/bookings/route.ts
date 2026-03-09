@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Sync to CRM (non-blocking)
-    sendBookingToCRM({
+    await sendBookingToCRM({
       bookingId: booking.id,
       eventType: eventType.slug || eventType.name,
       name: booking.invitee_name,
@@ -116,9 +116,6 @@ export async function POST(request: NextRequest) {
       notes: booking.invitee_notes || undefined,
       source: 'bookme',
       createdAt: new Date().toISOString(),
-    }).catch(error => {
-      console.error('CRM sync failed:', error)
-    })
 
     // Save custom question answers
     if (parsed.answers && parsed.answers.length > 0) {
