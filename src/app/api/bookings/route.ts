@@ -13,8 +13,10 @@ import { z } from 'zod'
 
 const BookingRequestSchema = z.object({
   event_type_id: z.string().uuid(),
-  name: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().min(1).optional(),
+  invitee_name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  invitee_email: z.string().email().optional(),
   notes: z.string().optional().default(''),
   answers: z
     .array(
@@ -47,8 +49,10 @@ export async function POST(request: NextRequest) {
 
     const {
       event_type_id,
-      name,
-      email,
+      name: _name,
+      invitee_name,
+      email: _email,
+      invitee_email,
       notes,
       answers,
       start_time,
@@ -56,6 +60,9 @@ export async function POST(request: NextRequest) {
       variant,
       campaign,
     } = parsed.data
+
+    const name = _name ?? invitee_name ?? ''
+    const email = _email ?? invitee_email ?? ''
 
     const supabase = await createServiceRoleClient()
 
