@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
           calendarId: settings.google_calendar_id ?? 'primary',
           conferenceDataVersion: 1,
           requestBody: {
-            summary: `${eventType.title} – ${name}`,
+            summary: `${eventType.name} – ${name}`,
             description: notes || undefined,
             start: { dateTime: startDate.toISOString() },
             end: { dateTime: endDate.toISOString() },
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
       await sendBookingToCRM({
         bookingId: booking.id,
         eventTypeId: eventType.id,
-        eventTypeName: eventType.title,
+        eventTypeName: eventType.name,
         eventTypeSlug: eventType.slug,
         name,
         email,
