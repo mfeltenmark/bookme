@@ -5,7 +5,7 @@
 //   - Defaults: source = "bookme", variant = null, campaign = null
 //   - These are stored on the booking row and forwarded to CRM webhook
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { sendBookingToCRM } from '@/lib/webhooks/crm-sync'
 import { google } from 'googleapis'
 import { NextRequest, NextResponse } from 'next/server'
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       campaign,
     } = parsed.data
 
-    const supabase = createClient()
+    const supabase = createServiceRoleClient()
 
     // 1. Load event type
     const { data: eventType, error: etError } = await supabase
