@@ -12,11 +12,11 @@
 // The old public listing page already calls this without query params, so it will
 // automatically hide any event types with is_listed = false – no changes needed there.
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
-  const supabase = createClient()
+  const supabase = createServiceRoleClient()
   const { searchParams } = new URL(request.url)
   const slug = searchParams.get('slug')
   const all = searchParams.get('all') === 'true'
