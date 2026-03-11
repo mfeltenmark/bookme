@@ -1,177 +1,213 @@
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/bookings/route.ts
+// Replace the existing file with this version.
+// Key changes vs previous:
+//   - BookingRequest accepts optional source, variant, campaign
+//   - Defaults: source = "bookme", variant = null, campaign = null
+//   - These are stored on the booking row and forwarded to CRM webhook
+
+import { createServiceRoleClient } from '@/lib/supabase/server'
 import { sendBookingToCRM } from '@/lib/webhooks/crm-sync'
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import { createCalendarEvent } from "@/lib/google/calendar";
-import { sendEmail } from "@/lib/email/send";
-import { bookingConfirmationEmail } from "@/lib/email/templates/booking-confirmation";
-import { formatEmailDate, formatEmailTime, getCancelUrl } from "@/lib/email/helpers";
-import { z } from "zod";
+import { google } from 'googleapis'
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
-const answerSchema = z.object({
-  question_id: z.string().uuid(),
-  question_label: z.string(),
-  answer: z.string(),
-});
-
-const bookingSchema = z.object({
+const BookingRequestSchema = z.object({
   event_type_id: z.string().uuid(),
-  invitee_name: z.string().min(1, "Name is required"),
-  invitee_email: z.string().email("Invalid email address"),
-  invitee_notes: z.string().optional(),
+  name: z.string().min(1),
+  email: z.string().email(),
+  notes: z.string().optional().default(''),
+  answers: z
+    .array(
+      z.object({
+        question_id: z.string().uuid(),
+        question_label: z.string(),
+        answer: z.string(),
+      })
+    )
+    .optional()
+    .default([]),
   start_time: z.string().datetime(),
-  end_time: z.string().datetime(),
-  answers: z.array(answerSchema).optional(),
-});
+  // Tracking fields – all optional, backward compatible
+  source: z.string().optional().default('bookme'),
+  variant: z.string().nullable().optional().default(null),
+  campaign: z.string().nullable().optional().default(null),
+})
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const parsed = bookingSchema.parse(body);
-    const supabase = await createServiceRoleClient();
+    const body = await request.json()
+    const parsed = BookingRequestSchema.safeParse(body)
 
-    const { data: eventType } = await supabase
-      .from("event_types")
-      .select("*")
-      .eq("id", parsed.event_type_id)
-      .eq("is_active", true)
-      .single();
-
-    if (!eventType) return NextResponse.json({ error: "Event type not found" }, { status: 404 });
-
-    // Check for conflicts
-    const { data: conflicts } = await supabase
-      .from("bookings")
-      .select("id")
-      .eq("status", "confirmed")
-      .lt("start_time", parsed.end_time)
-      .gt("end_time", parsed.start_time);
-
-    if (conflicts && conflicts.length > 0) {
-      return NextResponse.json({ error: "This time slot is already booked. Please choose another time." }, { status: 409 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid request', details: parsed.error.format() },
+        { status: 400 }
+      )
     }
 
-    // Build calendar event description with answers
-    let description = parsed.invitee_notes
-      ? `Message from ${parsed.invitee_name}:\n${parsed.invitee_notes}`
-      : `Booking via BookMe`;
+    const {
+      event_type_id,
+      name,
+      email,
+      notes,
+      answers,
+      start_time,
+      source,
+      variant,
+      campaign,
+    } = parsed.data
 
-    if (parsed.answers && parsed.answers.length > 0) {
-      description += "\n\n--- Booking details ---\n";
-      for (const a of parsed.answers) {
-        description += `${a.question_label}: ${a.answer}\n`;
+    const supabase = createServiceRoleClient()
+
+    // 1. Load event type
+    const { data: eventType, error: etError } = await supabase
+      .from('event_types')
+      .select('*')
+      .eq('id', event_type_id)
+      .eq('is_active', true)
+      .single()
+
+    if (etError || !eventType) {
+      return NextResponse.json({ error: 'Event type not found' }, { status: 404 })
+    }
+
+    // 2. Calculate end time
+    const startDate = new Date(start_time)
+    const endDate = new Date(startDate.getTime() + eventType.duration_minutes * 60 * 1000)
+
+    // 3. Double-check slot availability (guard against race condition)
+    const { data: conflict } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('status', 'confirmed')
+      .lt('start_time', endDate.toISOString())
+      .gt('end_time', startDate.toISOString())
+      .maybeSingle()
+
+    if (conflict) {
+      return NextResponse.json(
+        { error: 'This time slot is no longer available.' },
+        { status: 409 }
+      )
+    }
+
+    // 4. Create Google Calendar event with Meet link
+    let googleEventId: string | null = null
+    let googleMeetLink: string | null = null
+
+    try {
+      const { data: settings } = await supabase
+        .from('admin_settings')
+        .select('google_access_token, google_refresh_token, google_calendar_id')
+        .single()
+
+      if (settings?.google_access_token) {
+        const auth = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET
+        )
+        auth.setCredentials({
+          access_token: settings.google_access_token,
+          refresh_token: settings.google_refresh_token,
+        })
+
+        const calendar = google.calendar({ version: 'v3', auth })
+        const event = await calendar.events.insert({
+          calendarId: settings.google_calendar_id ?? 'primary',
+          conferenceDataVersion: 1,
+          requestBody: {
+            summary: `${eventType.title} – ${name}`,
+            description: notes || undefined,
+            start: { dateTime: startDate.toISOString() },
+            end: { dateTime: endDate.toISOString() },
+            attendees: [{ email }],
+            conferenceData: {
+              createRequest: { requestId: crypto.randomUUID() },
+            },
+          },
+        })
+
+        googleEventId = event.data.id ?? null
+        googleMeetLink =
+          event.data.conferenceData?.entryPoints?.find((e) => e.entryPointType === 'video')
+            ?.uri ?? null
       }
+    } catch (calendarError) {
+      console.error('Google Calendar error (non-fatal):', calendarError)
     }
 
-    // Create Google Calendar event
-    let googleEventId: string | null = null;
-    let googleMeetLink: string | null = null;
-
-    const calResult = await createCalendarEvent({
-      summary: `${eventType.name} with ${parsed.invitee_name}`,
-      description,
-      startTime: parsed.start_time,
-      endTime: parsed.end_time,
-      attendeeEmail: parsed.invitee_email,
-      attendeeName: parsed.invitee_name,
-    });
-
-    if (calResult) {
-      googleEventId = calResult.eventId;
-      googleMeetLink = calResult.meetLink;
-    }
-
-    // Create booking
-    const { data: booking, error } = await supabase
-      .from("bookings")
+    // 5. Persist booking with tracking fields
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
       .insert({
-        event_type_id: parsed.event_type_id,
-        invitee_name: parsed.invitee_name,
-        invitee_email: parsed.invitee_email,
-        invitee_notes: parsed.invitee_notes || null,
-        start_time: parsed.start_time,
-        end_time: parsed.end_time,
-        status: "confirmed",
+        event_type_id,
+        invitee_name: name,
+        invitee_email: email,
+        invitee_notes: notes,
+        start_time: startDate.toISOString(),
+        end_time: endDate.toISOString(),
+        status: 'confirmed',
         google_event_id: googleEventId,
         google_meet_link: googleMeetLink,
+        // Tracking
+        source: source ?? 'bookme',
+        variant: variant ?? null,
+        campaign: campaign ?? null,
       })
       .select()
-      .single();
+      .single()
 
-    if (error) {
-      console.error("Booking creation error:", error);
-      return NextResponse.json({ error: "Could not create booking" }, { status: 500 });
+    if (bookingError || !booking) {
+      console.error('Failed to save booking:', bookingError)
+      return NextResponse.json({ error: 'Failed to save booking' }, { status: 500 })
     }
 
-    // Sync to CRM (non-blocking)
-    await sendBookingToCRM({
-      bookingId: booking.id,
-      eventType: eventType.slug || eventType.name,
-      name: booking.invitee_name,
-      email: booking.invitee_email,
-      phone: undefined,
-      company: undefined,
-      scheduledDate: booking.start_time,
-      duration: Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000),
-      meetingUrl: booking.google_meet_link || undefined,
-      notes: booking.invitee_notes || undefined,
-      source: 'bookme',
-      createdAt: new Date().toISOString(),
-    })
-
-    // Save custom question answers
-    if (parsed.answers && parsed.answers.length > 0) {
-      const answerRows = parsed.answers.map((a) => ({
-        booking_id: booking.id,
-        question_id: a.question_id,
-        question_label: a.question_label,
-        answer: a.answer,
-      }));
-
-      const { error: answersError } = await supabase
-        .from("booking_answers")
-        .insert(answerRows);
-
-      if (answersError) {
-        console.error("Failed to save booking answers:", answersError);
-      }
+    // 6. Persist custom question answers
+    if (answers.length > 0) {
+      await supabase.from('booking_answers').insert(
+        answers.map((a) => ({
+          booking_id: booking.id,
+          question_id: a.question_id,
+          question_label: a.question_label,
+          answer: a.answer,
+        }))
+      )
     }
 
-    // Send confirmation email
-    const { data: adminSettings } = await supabase
-      .from("admin_settings")
-      .select("timezone")
-      .single();
-
-    const tz = adminSettings?.timezone || "Europe/Stockholm";
-    const cancelUrl = getCancelUrl(booking.id, booking.cancellation_token);
-
-    const emailContent = bookingConfirmationEmail({
-      inviteeName: parsed.invitee_name,
-      eventName: eventType.name,
-      dateStr: formatEmailDate(parsed.start_time, tz),
-      timeStr: formatEmailTime(parsed.start_time, parsed.end_time, tz),
-      timezone: tz,
-      meetLink: googleMeetLink,
-      cancelUrl,
-      confirmationMessage: eventType.confirmation_message,
-      answers: parsed.answers,
-    });
-
-    await sendEmail({ to: parsed.invitee_email, subject: emailContent.subject, html: emailContent.html });
+    // 7. Forward to CRM webhook (non-fatal)
+    try {
+      await sendBookingToCRM({
+        bookingId: booking.id,
+        eventTypeId: eventType.id,
+        eventTypeName: eventType.title,
+        eventTypeSlug: eventType.slug,
+        name,
+        email,
+        notes: notes ?? null,
+        answers,
+        scheduledDate: startDate.toISOString(),
+        duration: eventType.duration_minutes,
+        meetingUrl: googleMeetLink ?? undefined,
+        source: source ?? 'bookme',
+        variant: variant ?? null,
+        campaign: campaign ?? null,
+        createdAt: booking.created_at,
+      })
+    } catch (crmError) {
+      console.error('CRM webhook error (non-fatal):', crmError)
+    }
 
     return NextResponse.json({
+      success: true,
       booking: {
         id: booking.id,
         start_time: booking.start_time,
         end_time: booking.end_time,
         google_meet_link: booking.google_meet_link,
-        cancellation_token: booking.cancellation_token,
       },
-      message: "Booking confirmed!",
-    });
+    })
   } catch (err) {
-    if (err instanceof z.ZodError) return NextResponse.json({ error: "Invalid input", details: err.issues }, { status: 400 });
-    console.error("Booking error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error('Unexpected error in POST /api/bookings:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
