@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       campaign,
     } = parsed.data
 
-    const supabase = createServiceRoleClient()
+    const supabase = await createServiceRoleClient()
 
     // 1. Load event type
     const { data: eventType, error: etError } = await supabase
