@@ -102,10 +102,11 @@ export async function POST(request: NextRequest) {
     let googleEventId: string | null = null
     let googleMeetLink: string | null = null
 
-    try {
-      const calendarClient = await getGoogleCalendarClient().catch(() => null)
+    await (async () => {
+      try {
+        const calendarClient = await getGoogleCalendarClient().catch(() => null)
+        if (!calendarClient) return
 
-      if (calendarClient) {
         const { calendar, calendarId } = calendarClient
         const event = await calendar.events.insert({
           calendarId,
@@ -126,10 +127,10 @@ export async function POST(request: NextRequest) {
         googleMeetLink =
           event.data.conferenceData?.entryPoints?.find((e) => e.entryPointType === 'video')
             ?.uri ?? null
+      } catch (calendarError) {
+        console.error('Google Calendar error (non-fatal):', calendarError)
       }
-    } catch (calendarError) {
-      console.error('Google Calendar error (non-fatal):', calendarError)
-    }
+    })()
 
     // 5. Persist booking with tracking fields
     const { data: booking, error: bookingError } = await supabase
