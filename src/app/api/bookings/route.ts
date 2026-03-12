@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     let googleMeetLink: string | null = null
 
     try {
-      const calendarClient = await getGoogleCalendarClient()
+      const calendarClient = await getGoogleCalendarClient().catch(() => null)
 
       if (calendarClient) {
         const { calendar, calendarId } = calendarClient
