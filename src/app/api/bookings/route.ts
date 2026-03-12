@@ -215,6 +215,8 @@ export async function POST(request: NextRequest) {
         meetLink: googleMeetLink,
         cancelUrl,
         confirmationMessage: eventType.confirmation_message ?? null,
+        startTime: startDate.toISOString(),
+        endTime: endDate.toISOString(),
         answers,
       })
 

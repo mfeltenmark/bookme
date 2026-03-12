@@ -15,10 +15,21 @@ interface ConfirmationParams {
   cancelUrl: string;
   confirmationMessage?: string | null;
   answers?: AnswerInfo[];
+  startTime?: string;
+  endTime?: string;
 }
 
 export function bookingConfirmationEmail(params: ConfirmationParams): { subject: string; html: string } {
-  const { inviteeName, eventName, dateStr, timeStr, timezone, meetLink, cancelUrl, confirmationMessage, answers } = params;
+  const { inviteeName, eventName, dateStr, timeStr, timezone, meetLink, cancelUrl, confirmationMessage, answers, startTime, endTime } = params;
+
+  // Google Calendar add-to-calendar URL
+  let addToCalendarUrl = '';
+  if (startTime && endTime) {
+    const fmt = (d: string) => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const title = encodeURIComponent(`${eventName}`);
+    const details = encodeURIComponent(meetLink ? `Join via Google Meet: ${meetLink}` : '');
+    addToCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(startTime)}/${fmt(endTime)}&details=${details}`;
+  }
   const firstName = inviteeName.split(" ")[0];
 
   const infoLines = [
@@ -74,7 +85,8 @@ export function bookingConfirmationEmail(params: ConfirmationParams): { subject:
       ${customMessageBlock}
       ${answersBlock}
       ${meetLink ? emailButton("Open Google Meet", meetLink) : ""}
-      <p style="margin:24px 0 0;font-size:13px;color:${MUTED}">Need to make changes? <a href="${cancelUrl}" style="color:#5e3a8c;text-decoration:underline">Cancel this meeting</a></p>
+      ${addToCalendarUrl ? `<p style="margin:16px 0 0;font-size:13px"><a href="${addToCalendarUrl}" style="color:#5e3a8c;text-decoration:underline">📅 Add to Google Calendar</a></p>` : ''}
+      <p style="margin:8px 0 0;font-size:13px;color:${MUTED}">Need to make changes? <a href="${cancelUrl}" style="color:#5e3a8c;text-decoration:underline">Cancel this meeting</a></p>
     `,
   });
 
