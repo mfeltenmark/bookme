@@ -192,6 +192,37 @@ export async function POST(request: NextRequest) {
       console.error('CRM webhook error (non-fatal):', crmError)
     }
 
+    // 8. Send confirmation email (non-fatal)
+    try {
+      const { data: adminSettings } = await supabase
+        .from('admin_settings')
+        .select('timezone')
+        .single()
+
+      const tz = adminSettings?.timezone ?? 'Europe/Stockholm'
+      const dateStr = startDate.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz })
+      const timeStr = startDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }) + ' – ' + endDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })
+      const cancelUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/booking/${booking.id}/cancel?token=${booking.cancellation_token}`
+
+      const { bookingConfirmationEmail } = await import('@/lib/email/templates/booking-confirmation')
+      const { subject, html } = bookingConfirmationEmail({
+        inviteeName: name,
+        eventName: eventType.name,
+        dateStr,
+        timeStr,
+        timezone: tz,
+        meetLink: googleMeetLink,
+        cancelUrl,
+        confirmationMessage: eventType.confirmation_message ?? null,
+        answers,
+      })
+
+      const { sendEmail } = await import('@/lib/email/send')
+      await sendEmail({ to: email, subject, html })
+    } catch (emailError) {
+      console.error('Email send error (non-fatal):', emailError)
+    }
+
     return NextResponse.json({
       success: true,
       booking: {
