@@ -7,7 +7,7 @@
 
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { sendBookingToCRM } from '@/lib/webhooks/crm-sync'
-import { google } from 'googleapis'
+import { getGoogleCalendarClient } from '@/lib/google/tokens'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -102,25 +102,14 @@ export async function POST(request: NextRequest) {
     let googleEventId: string | null = null
     let googleMeetLink: string | null = null
 
-    try {
-      const { data: settings } = await supabase
-        .from('admin_settings')
-        .select('google_access_token, google_refresh_token, google_calendar_id')
-        .single()
+    await (async () => {
+      try {
+        const calendarClient = await getGoogleCalendarClient().catch(() => null)
+        if (!calendarClient) return
 
-      if (settings?.google_access_token) {
-        const auth = new google.auth.OAuth2(
-          process.env.GOOGLE_CLIENT_ID,
-          process.env.GOOGLE_CLIENT_SECRET
-        )
-        auth.setCredentials({
-          access_token: settings.google_access_token,
-          refresh_token: settings.google_refresh_token,
-        })
-
-        const calendar = google.calendar({ version: 'v3', auth })
+        const { calendar, calendarId } = calendarClient
         const event = await calendar.events.insert({
-          calendarId: settings.google_calendar_id ?? 'primary',
+          calendarId,
           conferenceDataVersion: 1,
           requestBody: {
             summary: `${eventType.name} – ${name}`,
@@ -138,10 +127,10 @@ export async function POST(request: NextRequest) {
         googleMeetLink =
           event.data.conferenceData?.entryPoints?.find((e) => e.entryPointType === 'video')
             ?.uri ?? null
+      } catch (calendarError) {
+        console.error('Google Calendar error (non-fatal):', calendarError)
       }
-    } catch (calendarError) {
-      console.error('Google Calendar error (non-fatal):', calendarError)
-    }
+    })()
 
     // 5. Persist booking with tracking fields
     const { data: booking, error: bookingError } = await supabase
@@ -202,6 +191,39 @@ export async function POST(request: NextRequest) {
       })
     } catch (crmError) {
       console.error('CRM webhook error (non-fatal):', crmError)
+    }
+
+    // 8. Send confirmation email (non-fatal)
+    try {
+      const { data: adminSettings } = await supabase
+        .from('admin_settings')
+        .select('timezone')
+        .single()
+
+      const tz = adminSettings?.timezone ?? 'Europe/Stockholm'
+      const dateStr = startDate.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz })
+      const timeStr = startDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }) + ' – ' + endDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })
+      const cancelUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/booking/${booking.id}/cancel?token=${booking.cancellation_token}`
+
+      const { bookingConfirmationEmail } = await import('@/lib/email/templates/booking-confirmation')
+      const { subject, html } = bookingConfirmationEmail({
+        inviteeName: name,
+        eventName: eventType.name,
+        dateStr,
+        timeStr,
+        timezone: tz,
+        meetLink: googleMeetLink,
+        cancelUrl,
+        confirmationMessage: eventType.confirmation_message ?? null,
+        startTime: startDate.toISOString(),
+        endTime: endDate.toISOString(),
+        answers,
+      })
+
+      const { sendEmail } = await import('@/lib/email/send')
+      await sendEmail({ to: email, subject, html })
+    } catch (emailError) {
+      console.error('Email send error (non-fatal):', emailError)
     }
 
     return NextResponse.json({
