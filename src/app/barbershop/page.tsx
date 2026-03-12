@@ -153,6 +153,11 @@ export default function PriorityBarbershopPage() {
   function handleTreatmentSelect(treatment: Treatment) {
     setSelectedTreatment(treatment);
     setCurrentMonth(new Date());
+  }
+
+  function handleTreatmentSelectAndScroll(treatment: Treatment) {
+    setSelectedTreatment(treatment);
+    setCurrentMonth(new Date());
     bookingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -241,29 +246,33 @@ export default function PriorityBarbershopPage() {
   const startOffset = (getDay(monthStart) + 6) % 7;
 
   return (
-    <main className="min-h-screen bg-[#0a0a0b] text-[#f3efe7]">
-      <div className="absolute inset-x-0 top-0 h-[32rem] bg-[radial-gradient(circle_at_top,_rgba(180,141,79,0.24),_transparent_48%),linear-gradient(180deg,_rgba(255,255,255,0.04),_transparent_55%)]" />
+    <main className="min-h-screen overflow-x-hidden bg-[#07090d] text-[#f3efe7]">
+      <div className="absolute inset-x-0 top-0 h-[38rem] bg-[radial-gradient(circle_at_top,_rgba(90,199,191,0.18),_transparent_38%),radial-gradient(circle_at_20%_20%,_rgba(81,49,122,0.26),_transparent_32%),linear-gradient(180deg,_rgba(255,255,255,0.03),_transparent_55%)]" />
+      <div className="absolute inset-x-0 top-[26rem] h-[30rem] bg-[linear-gradient(180deg,_rgba(10,17,24,0),_rgba(10,17,24,0.72)_35%,_rgba(7,9,13,1))]" />
 
-      <section className="relative mx-auto max-w-7xl px-6 pb-16 pt-8 sm:px-8 lg:px-12 lg:pb-24 lg:pt-12">
-        <div className="mb-12 flex items-center justify-between border-b border-white/10 pb-5 text-sm uppercase tracking-[0.32em] text-[#c5b28b]">
+      <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-8 sm:px-8 lg:px-12 lg:pb-32 lg:pt-12">
+        <div className="mb-14 flex items-center justify-between border-b border-white/10 pb-5 text-[11px] uppercase tracking-[0.32em] text-[#8dbeb8]">
           <span>Priority Barbershop</span>
-          <span>Editorial Booking Room</span>
+          <span className="hidden sm:inline">Editorial Booking Room</span>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-          <div className="max-w-3xl">
-            <p className="mb-4 text-sm uppercase tracking-[0.35em] text-[#c5b28b]">Trim the noise. Keep the signal.</p>
-            <h1 className="font-serif text-5xl leading-none tracking-tight text-[#f7f0e4] sm:text-6xl lg:text-7xl">
+        <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-stretch lg:gap-14">
+          <div className="max-w-4xl">
+            <div className="mb-6 inline-flex items-center rounded-full border border-[#8dbeb8]/30 bg-[#8dbeb8]/8 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-[#a9d8d3]">
+              Boutique strategy studio booking
+            </div>
+            <p className="mb-4 text-xs uppercase tracking-[0.35em] text-[#8dbeb8]">Trim the noise. Keep the signal.</p>
+            <h1 className="max-w-4xl font-serif text-5xl leading-[0.96] tracking-[-0.04em] text-[#f7f0e4] sm:text-6xl lg:text-[5.75rem]">
               Priority
               <br />
               Barbershop
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#c8c1b6]">
+            <p className="mt-8 max-w-2xl text-lg leading-8 text-[#cfd5d2] sm:text-[1.2rem]">
               A premium booking page for leaders who need sharper priorities, cleaner backlogs, and calmer delivery.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-10 flex flex-wrap gap-3">
               <Button
-                className="h-12 rounded-full border border-[#c5b28b] bg-[#c5b28b] px-6 text-sm font-medium text-black hover:bg-[#d2bf98]"
+                className="h-12 rounded-full border border-[#8dbeb8]/60 bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] px-6 text-sm font-medium text-[#071014] shadow-[0_10px_40px_rgba(86,183,175,0.24)] hover:brightness-105"
                 onClick={() => handleTreatmentSelect(TREATMENTS[0])}
               >
                 Book a treatment
@@ -271,98 +280,183 @@ export default function PriorityBarbershopPage() {
               </Button>
               <a
                 href="#treatments"
-                className="inline-flex h-12 items-center rounded-full border border-white/15 px-6 text-sm text-[#f3efe7] transition hover:border-white/30 hover:bg-white/5"
+                className="inline-flex h-12 items-center rounded-full border border-white/12 bg-white/[0.02] px-6 text-sm text-[#f3efe7] transition hover:border-[#8dbeb8]/35 hover:bg-white/[0.05]"
               >
                 View treatments
               </a>
             </div>
+            <div className="mt-10 grid max-w-2xl gap-3 text-sm text-[#cfd5d2] sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Format</p>
+                <p className="mt-2 text-base text-[#f3efe7]">Inline booking</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Access</p>
+                <p className="mt-2 text-base text-[#f3efe7]">Live availability</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Signal</p>
+                <p className="mt-2 text-base text-[#f3efe7]">Priority reset</p>
+              </div>
+            </div>
           </div>
 
-          <Card className="border-white/10 bg-white/5 shadow-[0_24px_100px_rgba(0,0,0,0.35)] backdrop-blur">
-            <CardContent className="p-7">
-              <div className="mb-6 flex items-center gap-3 text-sm text-[#c5b28b]">
-                <Sparkles className="h-4 w-4" />
-                <span>For founders, product leads, and overloaded teams</span>
-              </div>
-              <div className="space-y-5">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.22em] text-white/45">What this is</p>
-                  <p className="mt-2 text-base leading-7 text-[#e5ddd0]">
-                    A faster route into the existing BookMe engine, styled for a premium consultation offering.
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm uppercase tracking-[0.22em] text-white/45">What happens</p>
-                  <p className="mt-2 text-base leading-7 text-[#e5ddd0]">
-                    Pick a treatment, choose a live slot from the current backend, and book without leaving the page.
-                  </p>
+          <div className="grid gap-4 lg:grid-rows-[1.2fr_auto]">
+            <Card className="relative min-h-[26rem] overflow-hidden rounded-[2.2rem] border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] shadow-[0_24px_100px_rgba(0,0,0,0.42)] backdrop-blur">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_28%,rgba(94,58,140,0.28),transparent_22%),radial-gradient(circle_at_55%_18%,rgba(141,190,184,0.18),transparent_26%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_38%)]" />
+              <div className="absolute inset-y-5 right-5 hidden w-[48%] rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.16))] lg:block">
+                <div className="absolute inset-4 rounded-[1.4rem] border border-dashed border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(8,11,16,0.35))]" />
+                <div className="absolute inset-x-9 top-10 h-24 border-b border-white/10" />
+                <div className="absolute inset-x-9 bottom-12 flex items-end justify-between text-[11px] uppercase tracking-[0.24em] text-white/35">
+                  <span>Hero Image Area</span>
+                  <span>Editorial Crop</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <CardContent className="relative flex h-full flex-col justify-between p-8 lg:max-w-[52%]">
+                <div>
+                  <div className="mb-7 flex items-center gap-3 text-sm text-[#8dbeb8]">
+                    <Sparkles className="h-4 w-4" />
+                    <span>For founders, product leads, and overloaded teams</span>
+                  </div>
+                  <div className="space-y-6">
+                    <div className="rounded-2xl border border-white/8 bg-black/20 p-5">
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">What this is</p>
+                      <p className="mt-3 text-[15px] leading-7 text-[#e5ddd0]">
+                        A faster route into the existing BookMe engine, styled for a premium consultation offering.
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/8 bg-black/20 p-5">
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">What happens</p>
+                      <p className="mt-3 text-[15px] leading-7 text-[#e5ddd0]">
+                        Pick a treatment, choose a live slot from the current backend, and book without leaving the page.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-8 rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-[11px] uppercase tracking-[0.24em] text-white/45 lg:hidden">
+                  Reserved visual block for future hero imagery
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.035] px-5 py-5 text-sm text-[#d8d4cd] shadow-[0_16px_50px_rgba(0,0,0,0.2)]">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Visual cue</p>
+                <p className="mt-3 leading-7">Use this side of the hero for a portrait, studio still, or tightly cropped editorial detail.</p>
+              </div>
+              <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.035] px-5 py-5 text-sm text-[#d8d4cd] shadow-[0_16px_50px_rgba(0,0,0,0.2)]">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Materiality</p>
+                <p className="mt-3 leading-7">Current blocks are placeholders only, designed to accept final imagery without changing hierarchy.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="relative border-y border-white/10 bg-white/[0.03]">
-        <div className="mx-auto grid max-w-7xl gap-6 px-6 py-6 text-sm uppercase tracking-[0.2em] text-[#d7cec0] sm:px-8 lg:grid-cols-3 lg:px-12">
-          <p>Backlog too large to trust</p>
-          <p>Priorities changing faster than decisions</p>
-          <p>Too many inputs, not enough editorial judgement</p>
+      <section className="relative border-y border-white/8 bg-[linear-gradient(180deg,rgba(14,24,31,0.72),rgba(9,13,18,0.72))]">
+        <div className="mx-auto grid max-w-7xl gap-4 px-6 py-6 text-xs uppercase tracking-[0.22em] text-[#dce3df] sm:px-8 lg:grid-cols-3 lg:px-12">
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-5">Backlog too large to trust</div>
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-5">Priorities changing faster than decisions</div>
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-5">Too many inputs, not enough editorial judgement</div>
         </div>
       </section>
 
-      <section id="treatments" className="relative mx-auto max-w-7xl px-6 py-16 sm:px-8 lg:px-12 lg:py-24">
-        <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <section id="treatments" className="relative mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12 lg:py-32">
+        <div className="mb-12 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-[#c5b28b]">Treatments</p>
-            <h2 className="mt-3 font-serif text-4xl tracking-tight text-[#f7f0e4]">Choose the cut that fits the mess.</h2>
+            <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">Treatments</p>
+            <h2 className="mt-3 max-w-3xl font-serif text-4xl tracking-[-0.03em] text-[#f7f0e4] sm:text-5xl">Choose the cut that fits the mess.</h2>
           </div>
           <p className="max-w-xl text-base leading-7 text-[#c8c1b6]">
             Each treatment maps directly to an existing hidden event type and uses live availability from the current backend.
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-5 lg:grid-cols-3 lg:gap-6">
           {TREATMENTS.map((treatment) => {
             const isSelected = selectedTreatment?.slug === treatment.slug;
 
             return (
               <Card
                 key={treatment.slug}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                aria-label={`Select ${treatment.name}`}
+                onClick={() => {
+                  if (!isSelected) {
+                    handleTreatmentSelect(treatment);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (!isSelected && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    handleTreatmentSelect(treatment);
+                  }
+                }}
                 className={cn(
-                  "border-white/10 bg-[#121214] text-[#f3efe7] transition",
-                  isSelected && "border-[#c5b28b] bg-[#171513] shadow-[0_0_0_1px_rgba(197,178,139,0.28)]"
+                  "group relative overflow-hidden rounded-[2rem] border border-white/20 bg-[linear-gradient(180deg,#202835,#171d27)] text-[#f3efe7] shadow-[0_36px_110px_rgba(0,0,0,0.5)] transition duration-300 hover:-translate-y-1 hover:border-[#8dbeb8]/38 hover:shadow-[0_44px_120px_rgba(0,0,0,0.56)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8dbeb8]/45 focus-visible:ring-offset-0",
+                  isSelected && "border-[#b38ae0] bg-[linear-gradient(180deg,#241d31,#181d29)] shadow-[0_0_0_1px_rgba(179,138,224,0.34),0_0_40px_rgba(94,58,140,0.22),0_40px_120px_rgba(30,20,45,0.58)]"
                 )}
               >
-                <CardContent className="flex h-full flex-col p-7">
+                <div
+                  className={cn(
+                    "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/26 to-transparent transition duration-200",
+                    isSelected && "via-[#c8a7ee]"
+                  )}
+                />
+                <div
+                  className={cn(
+                    "pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_42%)] opacity-80 transition duration-200",
+                    isSelected && "bg-[radial-gradient(circle_at_top,rgba(94,58,140,0.36),transparent_44%)] opacity-100"
+                  )}
+                />
+                <div
+                  className={cn(
+                    "pointer-events-none absolute inset-x-4 inset-y-4 rounded-[1.6rem] border border-white/10 transition duration-200",
+                    isSelected && "border-[#8f68bb]/40"
+                  )}
+                />
+                <div
+                  className={cn(
+                    "pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.22))]",
+                    isSelected && "bg-[linear-gradient(180deg,transparent,rgba(94,58,140,0.18))]"
+                  )}
+                />
+                <CardContent className="flex h-full flex-col p-8">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-sm uppercase tracking-[0.28em] text-[#c5b28b]">{treatment.subtitle}</p>
-                      <h3 className="mt-3 text-2xl font-semibold tracking-tight">{treatment.name}</h3>
+                      <p className={cn("text-[11px] uppercase tracking-[0.3em] text-[#8dbeb8] transition duration-200", isSelected && "text-[#d2b4f3]")}>{treatment.subtitle}</p>
+                      <h3 className={cn("mt-4 text-[1.9rem] font-semibold tracking-[-0.03em] text-[#f7f0e4] transition duration-200", isSelected && "text-[#fcf8ff]")}>{treatment.name}</h3>
                     </div>
-                    <span className="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-white/60">
+                    <span className={cn("rounded-full border border-white/12 bg-black/20 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-white/70 transition duration-200", isSelected && "border-[#8f68bb]/40 bg-[#5e3a8c]/18 text-[#e6d7fb]")}>
                       {treatment.duration}
                     </span>
                   </div>
 
-                  <p className="mt-5 text-base leading-7 text-[#c8c1b6]">{treatment.summary}</p>
+                  <p className={cn("mt-6 text-base leading-7 text-[#d1cbc3] transition duration-200", isSelected && "text-[#e2dceb]")}>{treatment.summary}</p>
 
-                  <div className="mt-6 space-y-3 text-sm text-[#ebe3d7]">
+                  <div className={cn("mt-7 rounded-[1.4rem] border border-white/10 bg-black/24 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition duration-200", isSelected && "border-[#8f68bb]/28 bg-[linear-gradient(180deg,rgba(94,58,140,0.16),rgba(0,0,0,0.2))]")}>
+                    <div className="space-y-3 text-sm text-[#ebe3d7]">
                     {treatment.bullets.map((bullet) => (
                       <div key={bullet} className="flex items-center gap-3">
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#c5b28b]" />
+                        <div className={cn("h-1.5 w-1.5 rounded-full bg-[#8dbeb8] transition duration-200", isSelected && "bg-[#c8a7ee] shadow-[0_0_14px_rgba(200,167,238,0.85)]")} />
                         <span>{bullet}</span>
                       </div>
                     ))}
+                    </div>
                   </div>
 
                   <Button
-                    onClick={() => handleTreatmentSelect(treatment)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleTreatmentSelectAndScroll(treatment);
+                    }}
                     className={cn(
-                      "mt-8 h-11 rounded-full border px-5",
+                      "mt-10 h-11 rounded-full border px-5 text-sm transition duration-200",
                       isSelected
-                        ? "border-[#c5b28b] bg-[#c5b28b] text-black hover:bg-[#d2bf98]"
-                        : "border-white/15 bg-transparent text-[#f3efe7] hover:bg-white/[0.07]"
+                        ? "border-[#c8a7ee] bg-[linear-gradient(135deg,#5e3a8c,#8c66b9_55%,#c6ece8)] text-[#071014] shadow-[0_14px_38px_rgba(94,58,140,0.34)] hover:brightness-105"
+                        : "border-white/22 bg-white/[0.12] text-[#fffaf3] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:border-[#8dbeb8]/36 hover:bg-white/[0.16]"
                     )}
                   >
                     {isSelected ? "Selected" : "Choose treatment"}
@@ -374,86 +468,105 @@ export default function PriorityBarbershopPage() {
         </div>
       </section>
 
-      <section className="relative mx-auto grid max-w-7xl gap-8 px-6 py-4 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:px-12 lg:py-10">
-        <Card className="border-white/10 bg-[#111214] text-[#f3efe7]">
-          <CardContent className="p-8">
-            <p className="text-sm uppercase tracking-[0.3em] text-[#c5b28b]">The Expert</p>
+      <section className="relative mx-auto grid max-w-7xl gap-8 px-6 py-2 sm:px-8 lg:grid-cols-[1.02fr_0.98fr] lg:px-12 lg:py-8">
+        <Card className="relative overflow-hidden rounded-[2.1rem] border-white/10 bg-[linear-gradient(180deg,#0f141a,#0a0d12)] text-[#f3efe7] shadow-[0_18px_60px_rgba(0,0,0,0.26)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(141,190,184,0.12),transparent_24%),radial-gradient(circle_at_85%_15%,rgba(94,58,140,0.22),transparent_26%)]" />
+          <div className="absolute inset-y-6 right-6 hidden w-[38%] rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(5,7,11,0.26))] lg:block">
+            <div className="absolute inset-4 rounded-[1.35rem] border border-dashed border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(9,11,16,0.32))]" />
+            <div className="absolute inset-x-8 bottom-8 text-[11px] uppercase tracking-[0.24em] text-white/35">Founder Portrait Area</div>
+          </div>
+          <CardContent className="relative p-8 sm:p-9 lg:max-w-[58%]">
+            <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">The Expert</p>
             <div className="mt-6 flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5">
-                <UserRound className="h-6 w-6 text-[#c5b28b]" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#8dbeb8]/25 bg-[#8dbeb8]/8 shadow-[0_0_40px_rgba(86,183,175,0.14)]">
+                <UserRound className="h-6 w-6 text-[#8dbeb8]" />
               </div>
               <div>
-                <p className="text-xl font-semibold">Tracy</p>
-                <p className="text-sm uppercase tracking-[0.2em] text-white/45">Strategic editor for product priorities</p>
+                <p className="text-2xl font-semibold tracking-[-0.02em]">Tracy</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-white/45">Strategic editor for product priorities</p>
               </div>
             </div>
             <p className="mt-6 text-base leading-7 text-[#c8c1b6]">
               The work is less about adding process and more about removing interference. The goal is a cleaner decision surface and a backlog you can actually trust.
             </p>
+            <div className="mt-7 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-[#d7d1c8] lg:hidden">
+              Reserved portrait block for future founder imagery.
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-white/10 bg-white/[0.03] text-[#f3efe7]">
-          <CardContent className="grid gap-6 p-8 sm:grid-cols-3">
-            <div>
-              <Scissors className="h-5 w-5 text-[#c5b28b]" />
-              <p className="mt-4 text-sm uppercase tracking-[0.22em] text-white/45">1. Diagnose</p>
-              <p className="mt-2 text-sm leading-7 text-[#d7cec0]">Identify the actual bottleneck instead of treating symptoms.</p>
+        <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.025))] text-[#f3efe7] shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
+          <CardContent className="grid gap-5 p-8 sm:grid-cols-3 sm:p-9">
+            <div className="rounded-3xl border border-white/8 bg-black/20 p-5">
+              <Scissors className="h-5 w-5 text-[#8dbeb8]" />
+              <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">1. Diagnose</p>
+              <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Identify the actual bottleneck instead of treating symptoms.</p>
             </div>
-            <div>
-              <Calendar className="h-5 w-5 text-[#c5b28b]" />
-              <p className="mt-4 text-sm uppercase tracking-[0.22em] text-white/45">2. Cut</p>
-              <p className="mt-2 text-sm leading-7 text-[#d7cec0]">Remove stale work, noisy requests, and false urgency.</p>
+            <div className="rounded-3xl border border-white/8 bg-black/20 p-5">
+              <Calendar className="h-5 w-5 text-[#8dbeb8]" />
+              <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">2. Cut</p>
+              <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Remove stale work, noisy requests, and false urgency.</p>
             </div>
-            <div>
-              <Clock3 className="h-5 w-5 text-[#c5b28b]" />
-              <p className="mt-4 text-sm uppercase tracking-[0.22em] text-white/45">3. Reset</p>
-              <p className="mt-2 text-sm leading-7 text-[#d7cec0]">Leave with a clearer operating line and an actionable next move.</p>
+            <div className="rounded-3xl border border-white/8 bg-black/20 p-5">
+              <Clock3 className="h-5 w-5 text-[#8dbeb8]" />
+              <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">3. Reset</p>
+              <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Leave with a clearer operating line and an actionable next move.</p>
             </div>
           </CardContent>
         </Card>
       </section>
 
-      <section ref={bookingRef} className="relative mx-auto max-w-7xl px-6 py-16 sm:px-8 lg:px-12 lg:py-24">
-        <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <section ref={bookingRef} className="relative mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12 lg:py-32">
+        <div className="mb-12 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-[#c5b28b]">Booking</p>
-            <h2 className="mt-3 font-serif text-4xl tracking-tight text-[#f7f0e4]">Book inline. No detours.</h2>
+            <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">Booking</p>
+            <h2 className="mt-3 font-serif text-4xl tracking-[-0.03em] text-[#f7f0e4] sm:text-5xl">Book inline. No detours.</h2>
           </div>
           <p className="max-w-2xl text-base leading-7 text-[#c8c1b6]">
             Select a treatment to load live availability from the mapped event type, then choose a date, a time, and complete the booking here.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr]">
-          <Card className="border-white/10 bg-[#111214] text-[#f3efe7]">
-            <CardContent className="p-7">
-              <p className="text-sm uppercase tracking-[0.28em] text-[#c5b28b]">Selected treatment</p>
+        <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:gap-7">
+          <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,#10161c,#0b0f14)] text-[#f3efe7] shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
+            <CardContent className="p-8">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-[#8dbeb8]">Selected treatment</p>
               {selectedTreatment ? (
-                <>
-                  <h3 className="mt-4 text-3xl font-semibold tracking-tight">{selectedTreatment.name}</h3>
-                  <p className="mt-2 text-sm uppercase tracking-[0.24em] text-white/45">{selectedTreatment.subtitle}</p>
-                  <p className="mt-6 text-base leading-7 text-[#c8c1b6]">{selectedTreatment.summary}</p>
-                </>
+                <div className="mt-5 rounded-[1.85rem] border border-[#8dbeb8]/18 bg-[linear-gradient(180deg,rgba(94,58,140,0.18),rgba(141,190,184,0.08)_34%,rgba(255,255,255,0.03))] p-6 shadow-[0_22px_60px_rgba(34,40,66,0.22)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.26em] text-[#d7c7ee]">Now booking</p>
+                      <h3 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#fbf7ff]">{selectedTreatment.name}</h3>
+                      <p className="mt-2 text-xs uppercase tracking-[0.24em] text-[#b8ddd8]">{selectedTreatment.subtitle}</p>
+                    </div>
+                    <div className="rounded-full border border-[#8dbeb8]/20 bg-black/20 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-[#d7c7ee]">
+                      Active
+                    </div>
+                  </div>
+                  <p className="mt-5 text-base leading-7 text-[#d8d3df]">{selectedTreatment.summary}</p>
+                </div>
               ) : (
                 <p className="mt-4 text-base leading-7 text-[#c8c1b6]">Choose one of the treatments above to load the booking interface.</p>
               )}
 
               {availabilityData?.eventType && (
-                <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-[#d7cec0]">
-                  <p className="font-medium text-[#f3efe7]">{availabilityData.eventType.name}</p>
-                  <p className="mt-1">Live duration: {availabilityData.eventType.duration_minutes} min</p>
-                  <p className="mt-1">Timezone: {availabilityData.timezone}</p>
+                <div className="mt-7 rounded-[1.75rem] border border-[#8dbeb8]/20 bg-[linear-gradient(180deg,rgba(141,190,184,0.1),rgba(94,58,140,0.08),rgba(255,255,255,0.03))] p-5 text-sm text-[#d7cec0]">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#8dbeb8]">Live configuration</p>
+                  <p className="mt-3 font-medium text-[#f3efe7]">{availabilityData.eventType.name}</p>
+                  <div className="mt-3 space-y-1 text-[#c6cfcc]">
+                    <p>Live duration: {availabilityData.eventType.duration_minutes} min</p>
+                    <p>Timezone: {availabilityData.timezone}</p>
+                  </div>
                 </div>
               )}
 
               {bookingResult && selectedSlot && (
-                <div className="mt-6 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-4">
-                  <div className="flex items-center gap-3 text-emerald-200">
+                <div className="mt-7 rounded-[1.75rem] border border-[#8dbeb8]/28 bg-[linear-gradient(180deg,rgba(90,199,191,0.16),rgba(90,199,191,0.08))] p-5 shadow-[0_18px_50px_rgba(37,104,112,0.2)]">
+                  <div className="flex items-center gap-3 text-[#d3fbf7]">
                     <Check className="h-5 w-5" />
                     <p className="font-medium">Booking confirmed</p>
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-emerald-50/90">
+                  <p className="mt-3 text-sm leading-6 text-[#e8fffb]/90">
                     {format(selectedSlot.start, "EEEE, MMMM d")} at {formatTime(selectedSlot.start, timezone)} is locked in. A confirmation is on its way to {email}.
                   </p>
                 </div>
@@ -461,26 +574,26 @@ export default function PriorityBarbershopPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-[#141517] text-[#f3efe7]">
-            <CardContent className="p-7">
+          <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,#121820,#0f1217)] text-[#f3efe7] shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
+            <CardContent className="p-8">
               {!selectedTreatment && (
-                <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-14 text-center">
+                <div className="rounded-[1.9rem] border border-dashed border-white/10 bg-white/[0.02] px-6 py-16 text-center">
                   <p className="text-lg font-medium">Choose a treatment to begin.</p>
                   <p className="mt-3 text-sm text-[#c8c1b6]">Availability will load here from the existing backend as soon as you select one.</p>
                 </div>
               )}
 
               {selectedTreatment && loadingAvailability && (
-                <div className="flex min-h-[18rem] items-center justify-center rounded-3xl border border-white/10 bg-white/[0.02]">
+                <div className="flex min-h-[18rem] items-center justify-center rounded-[1.9rem] border border-white/10 bg-white/[0.02]">
                   <div className="flex items-center gap-3 text-[#d7cec0]">
-                    <Loader2 className="h-5 w-5 animate-spin text-[#c5b28b]" />
+                    <Loader2 className="h-5 w-5 animate-spin text-[#8dbeb8]" />
                     <span>Loading live availability</span>
                   </div>
                 </div>
               )}
 
               {selectedTreatment && availabilityError && !loadingAvailability && (
-                <div className="rounded-3xl border border-red-400/25 bg-red-400/10 px-6 py-8">
+                <div className="rounded-[1.9rem] border border-red-400/25 bg-red-400/10 px-6 py-8">
                   <p className="font-medium text-red-100">Availability could not be loaded.</p>
                   <p className="mt-2 text-sm text-red-100/80">{availabilityError}</p>
                 </div>
@@ -489,14 +602,14 @@ export default function PriorityBarbershopPage() {
               {selectedTreatment && availabilityData && !loadingAvailability && (
                 <div className="space-y-8">
                   <div className="grid gap-8 xl:grid-cols-[0.95fr_1.05fr]">
-                    <div>
+                    <div className="rounded-[1.75rem] border border-white/8 bg-black/20 p-5 sm:p-6">
                       <div className="mb-5 flex items-center justify-between">
-                        <p className="text-sm uppercase tracking-[0.24em] text-white/45">1. Pick a date</p>
+                        <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">1. Pick a date</p>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="rounded-full text-[#f3efe7] hover:bg-white/[0.07]"
+                            className="rounded-full text-[#f3efe7] hover:bg-white/[0.07] hover:text-[#bfeae5]"
                             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
                           >
                             <ChevronLeft className="h-4 w-4" />
@@ -507,7 +620,7 @@ export default function PriorityBarbershopPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="rounded-full text-[#f3efe7] hover:bg-white/[0.07]"
+                            className="rounded-full text-[#f3efe7] hover:bg-white/[0.07] hover:text-[#bfeae5]"
                             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
                           >
                             <ChevronRight className="h-4 w-4" />
@@ -541,12 +654,12 @@ export default function PriorityBarbershopPage() {
                               disabled={!isAvailable || isPast}
                               onClick={() => handleDateSelect(dateString)}
                               className={cn(
-                                "h-12 rounded-2xl border text-sm transition",
+                                "h-12 rounded-2xl border text-sm transition duration-200",
                                 isAvailable && !isPast
-                                  ? "cursor-pointer border-white/10 bg-white/[0.04] text-[#f3efe7] hover:border-[#c5b28b]/60 hover:bg-[#c5b28b]/10"
+                                  ? "cursor-pointer border-white/10 bg-white/[0.04] text-[#f3efe7] hover:border-[#8dbeb8]/55 hover:bg-[#8dbeb8]/12"
                                   : "cursor-default border-transparent bg-transparent text-white/20",
                                 isSameDay(day, new Date()) && "border-white/20",
-                                isSelected && "border-[#c5b28b] bg-[#c5b28b] text-black hover:bg-[#c5b28b]"
+                                isSelected && "border-[#8dbeb8] bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] text-[#071014] shadow-[0_12px_30px_rgba(86,183,175,0.22)] hover:brightness-105"
                               )}
                             >
                               {format(day, "d")}
@@ -556,8 +669,8 @@ export default function PriorityBarbershopPage() {
                       </div>
                     </div>
 
-                    <div>
-                      <p className="mb-5 text-sm uppercase tracking-[0.24em] text-white/45">2. Pick a time</p>
+                    <div className="rounded-[1.75rem] border border-white/8 bg-black/20 p-5 sm:p-6">
+                      <p className="mb-5 text-[11px] uppercase tracking-[0.24em] text-white/45">2. Pick a time</p>
                       {selectedDate ? (
                         selectedSlots.length > 0 ? (
                           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -575,10 +688,10 @@ export default function PriorityBarbershopPage() {
                                     setSubmitError(null);
                                   }}
                                   className={cn(
-                                    "rounded-2xl border px-4 py-3 text-sm transition",
+                                    "rounded-2xl border px-4 py-3 text-sm transition duration-200",
                                     isSelected
-                                      ? "border-[#c5b28b] bg-[#c5b28b] text-black"
-                                      : "border-white/10 bg-white/[0.04] text-[#f3efe7] hover:border-[#c5b28b]/60 hover:bg-white/[0.08]"
+                                      ? "border-[#8dbeb8] bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] text-[#071014] shadow-[0_12px_30px_rgba(86,183,175,0.18)]"
+                                      : "border-white/10 bg-white/[0.04] text-[#f3efe7] hover:border-[#8dbeb8]/50 hover:bg-white/[0.08]"
                                   )}
                                 >
                                   {formatTime(new Date(slot.start), timezone)}
@@ -599,10 +712,10 @@ export default function PriorityBarbershopPage() {
                     </div>
                   </div>
 
-                  <div className="border-t border-white/10 pt-8">
+                  <div className="rounded-[1.9rem] border border-white/8 bg-black/20 p-6 sm:p-7">
                     <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                       <div>
-                        <p className="text-sm uppercase tracking-[0.24em] text-white/45">3. Complete booking</p>
+                        <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">3. Complete booking</p>
                         {selectedSlot ? (
                           <p className="mt-2 text-sm text-[#d7cec0]">
                             {format(selectedSlot.start, "EEEE, MMMM d")} at {formatTime(selectedSlot.start, timezone)}
@@ -623,7 +736,7 @@ export default function PriorityBarbershopPage() {
                           value={name}
                           onChange={(event) => setName(event.target.value)}
                           placeholder="Jane Smith"
-                          className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30"
+                          className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30 focus-visible:ring-[#8dbeb8]/60"
                           required
                         />
                       </div>
@@ -638,7 +751,7 @@ export default function PriorityBarbershopPage() {
                           value={email}
                           onChange={(event) => setEmail(event.target.value)}
                           placeholder="jane@example.com"
-                          className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30"
+                          className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30 focus-visible:ring-[#8dbeb8]/60"
                           required
                         />
                       </div>
@@ -657,7 +770,7 @@ export default function PriorityBarbershopPage() {
                               onChange={(event) => updateAnswer(question.id, event.target.value)}
                               placeholder={question.placeholder || ""}
                               rows={4}
-                              className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30"
+                              className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30 focus-visible:ring-[#8dbeb8]/60"
                               required={question.is_required}
                             />
                           ) : question.field_type === "select" && question.options ? (
@@ -682,7 +795,7 @@ export default function PriorityBarbershopPage() {
                               value={answers[question.id] || ""}
                               onChange={(event) => updateAnswer(question.id, event.target.value)}
                               placeholder={question.placeholder || ""}
-                              className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30"
+                              className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30 focus-visible:ring-[#8dbeb8]/60"
                               required={question.is_required}
                             />
                           )}
@@ -699,7 +812,7 @@ export default function PriorityBarbershopPage() {
                           onChange={(event) => setNotes(event.target.value)}
                           placeholder="What would you like to sharpen?"
                           rows={4}
-                          className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30"
+                          className="border-white/10 bg-white/[0.04] text-[#f3efe7] placeholder:text-white/30 focus-visible:ring-[#8dbeb8]/60"
                         />
                       </div>
 
@@ -716,7 +829,7 @@ export default function PriorityBarbershopPage() {
                         <Button
                           type="submit"
                           disabled={!isFormValid() || submitting}
-                          className="h-11 rounded-full bg-[#c5b28b] px-6 text-black hover:bg-[#d2bf98]"
+                          className="h-11 rounded-full border border-[#8dbeb8]/60 bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] px-6 text-[#071014] shadow-[0_12px_35px_rgba(86,183,175,0.2)] hover:brightness-105"
                         >
                           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                           Confirm booking

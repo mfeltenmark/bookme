@@ -7,7 +7,7 @@
 
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { sendBookingToCRM } from '@/lib/webhooks/crm-sync'
-import { google } from 'googleapis'
+import { getGoogleCalendarClient } from '@/lib/google/tokens'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -103,24 +103,12 @@ export async function POST(request: NextRequest) {
     let googleMeetLink: string | null = null
 
     try {
-      const { data: settings } = await supabase
-        .from('admin_settings')
-        .select('google_access_token, google_refresh_token, google_calendar_id')
-        .single()
+      const calendarClient = await getGoogleCalendarClient()
 
-      if (settings?.google_access_token) {
-        const auth = new google.auth.OAuth2(
-          process.env.GOOGLE_CLIENT_ID,
-          process.env.GOOGLE_CLIENT_SECRET
-        )
-        auth.setCredentials({
-          access_token: settings.google_access_token,
-          refresh_token: settings.google_refresh_token,
-        })
-
-        const calendar = google.calendar({ version: 'v3', auth })
+      if (calendarClient) {
+        const { calendar, calendarId } = calendarClient
         const event = await calendar.events.insert({
-          calendarId: settings.google_calendar_id ?? 'primary',
+          calendarId,
           conferenceDataVersion: 1,
           requestBody: {
             summary: `${eventType.name} – ${name}`,
