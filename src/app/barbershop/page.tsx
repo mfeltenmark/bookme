@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -256,11 +257,8 @@ export default function PriorityBarbershopPage() {
           <span className="hidden sm:inline">Editorial Booking Room</span>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-stretch lg:gap-14">
+        <div className="grid gap-8 lg:grid-cols-[0.94fr_1.06fr] lg:items-stretch lg:gap-10">
           <div className="max-w-4xl">
-            <div className="mb-6 inline-flex items-center rounded-full border border-[#8dbeb8]/30 bg-[#8dbeb8]/8 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-[#a9d8d3]">
-              Boutique strategy studio booking
-            </div>
             <p className="mb-4 text-xs uppercase tracking-[0.35em] text-[#8dbeb8]">Trim the noise. Keep the signal.</p>
             <h1 className="max-w-4xl font-serif text-5xl leading-[0.96] tracking-[-0.04em] text-[#f7f0e4] sm:text-6xl lg:text-[5.75rem]">
               Priority
@@ -273,7 +271,7 @@ export default function PriorityBarbershopPage() {
             <div className="mt-10 flex flex-wrap gap-3">
               <Button
                 className="h-12 rounded-full border border-[#8dbeb8]/60 bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] px-6 text-sm font-medium text-[#071014] shadow-[0_10px_40px_rgba(86,183,175,0.24)] hover:brightness-105"
-                onClick={() => handleTreatmentSelect(TREATMENTS[0])}
+                onClick={() => handleTreatmentSelectAndScroll(TREATMENTS[0])}
               >
                 Book a treatment
                 <ArrowRight className="h-4 w-4" />
@@ -285,69 +283,60 @@ export default function PriorityBarbershopPage() {
                 View treatments
               </a>
             </div>
-            <div className="mt-10 grid max-w-2xl gap-3 text-sm text-[#cfd5d2] sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Format</p>
-                <p className="mt-2 text-base text-[#f3efe7]">Inline booking</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Access</p>
-                <p className="mt-2 text-base text-[#f3efe7]">Live availability</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Signal</p>
-                <p className="mt-2 text-base text-[#f3efe7]">Priority reset</p>
+            <p className="mt-8 max-w-xl text-sm leading-7 text-white/55">
+              Choose a treatment, see live availability, and book the session without leaving the page.
+            </p>
+
+            <div className="relative mt-10 overflow-hidden rounded-[1.9rem] border border-white/10 bg-black shadow-[0_24px_80px_rgba(0,0,0,0.3)] lg:hidden">
+              <div className="relative aspect-[4/5] w-full">
+                <Image
+                  src="/mikaelf/armar_kors_3_HERO.png"
+                  alt="Portrait of the founder in a dark editorial barbershop setting"
+                  fill
+                  className="object-cover object-[54%_18%]"
+                  sizes="100vw"
+                  priority
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.04),rgba(4,6,9,0.18)_44%,rgba(4,6,9,0.36)),radial-gradient(circle_at_20%_24%,rgba(94,58,140,0.18),transparent_28%)]" />
               </div>
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-rows-[1.2fr_auto]">
-            <Card className="relative min-h-[26rem] overflow-hidden rounded-[2.2rem] border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] shadow-[0_24px_100px_rgba(0,0,0,0.42)] backdrop-blur">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_28%,rgba(94,58,140,0.28),transparent_22%),radial-gradient(circle_at_55%_18%,rgba(141,190,184,0.18),transparent_26%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_38%)]" />
-              <div className="absolute inset-y-5 right-5 hidden w-[48%] rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.16))] lg:block">
-                <div className="absolute inset-4 rounded-[1.4rem] border border-dashed border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(8,11,16,0.35))]" />
-                <div className="absolute inset-x-9 top-10 h-24 border-b border-white/10" />
-                <div className="absolute inset-x-9 bottom-12 flex items-end justify-between text-[11px] uppercase tracking-[0.24em] text-white/35">
-                  <span>Hero Image Area</span>
-                  <span>Editorial Crop</span>
-                </div>
+          <div className="grid gap-3 lg:grid-rows-[1fr_auto]">
+            <Card className="relative min-h-[29rem] overflow-hidden rounded-[2.2rem] border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] shadow-[0_24px_100px_rgba(0,0,0,0.42)] backdrop-blur">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_26%,rgba(94,58,140,0.32),transparent_22%),radial-gradient(circle_at_58%_18%,rgba(141,190,184,0.16),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_38%)]" />
+              <div className="absolute inset-y-4 right-4 hidden w-[60%] overflow-hidden rounded-[2rem] border border-white/10 bg-black lg:block">
+                <Image
+                  src="/mikaelf/armar_kors_3_HERO.png"
+                  alt="Portrait of the founder in a dark editorial barbershop setting"
+                  fill
+                  className="object-cover object-[54%_24%]"
+                  sizes="(min-width: 1024px) 40vw, 100vw"
+                  priority
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.08),rgba(4,6,9,0.2)_42%,rgba(4,6,9,0.48)),radial-gradient(circle_at_18%_24%,rgba(94,58,140,0.22),transparent_28%)]" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/8" />
               </div>
-              <CardContent className="relative flex h-full flex-col justify-between p-8 lg:max-w-[52%]">
+              <div className="absolute inset-y-6 left-6 hidden w-[26%] rounded-[1.8rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] lg:block" />
+              <CardContent className="relative flex h-full flex-col justify-end p-8 lg:max-w-[32%]">
                 <div>
                   <div className="mb-7 flex items-center gap-3 text-sm text-[#8dbeb8]">
                     <Sparkles className="h-4 w-4" />
                     <span>For founders, product leads, and overloaded teams</span>
                   </div>
-                  <div className="space-y-6">
-                    <div className="rounded-2xl border border-white/8 bg-black/20 p-5">
-                      <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">What this is</p>
-                      <p className="mt-3 text-[15px] leading-7 text-[#e5ddd0]">
-                        A faster route into the existing BookMe engine, styled for a premium consultation offering.
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-black/20 p-5">
-                      <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">What happens</p>
-                      <p className="mt-3 text-[15px] leading-7 text-[#e5ddd0]">
-                        Pick a treatment, choose a live slot from the current backend, and book without leaving the page.
-                      </p>
-                    </div>
+                  <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(3,5,8,0.3),rgba(3,5,8,0.5))] p-5 backdrop-blur-sm">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-white/38">Editorial portrait</p>
+                    <p className="mt-3 text-sm leading-7 text-[#e5ddd0]">
+                      A human-led consultation offer, framed with the same level of intent as the booking experience itself.
+                    </p>
                   </div>
-                </div>
-                <div className="mt-8 rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-[11px] uppercase tracking-[0.24em] text-white/45 lg:hidden">
-                  Reserved visual block for future hero imagery
                 </div>
               </CardContent>
             </Card>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.035] px-5 py-5 text-sm text-[#d8d4cd] shadow-[0_16px_50px_rgba(0,0,0,0.2)]">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Visual cue</p>
-                <p className="mt-3 leading-7">Use this side of the hero for a portrait, studio still, or tightly cropped editorial detail.</p>
-              </div>
-              <div className="rounded-[1.7rem] border border-white/10 bg-white/[0.035] px-5 py-5 text-sm text-[#d8d4cd] shadow-[0_16px_50px_rgba(0,0,0,0.2)]">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Materiality</p>
-                <p className="mt-3 leading-7">Current blocks are placeholders only, designed to accept final imagery without changing hierarchy.</p>
-              </div>
+            <div className="rounded-[1.7rem] border border-white/8 bg-white/[0.025] px-5 py-4 text-sm text-[#d8d4cd] shadow-[0_12px_36px_rgba(0,0,0,0.16)]">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Booking note</p>
+              <p className="mt-3 leading-7">This route is built to feel editorial up top and operational at the point of booking.</p>
             </div>
           </div>
         </div>
@@ -471,46 +460,74 @@ export default function PriorityBarbershopPage() {
       <section className="relative mx-auto grid max-w-7xl gap-8 px-6 py-2 sm:px-8 lg:grid-cols-[1.02fr_0.98fr] lg:px-12 lg:py-8">
         <Card className="relative overflow-hidden rounded-[2.1rem] border-white/10 bg-[linear-gradient(180deg,#0f141a,#0a0d12)] text-[#f3efe7] shadow-[0_18px_60px_rgba(0,0,0,0.26)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(141,190,184,0.12),transparent_24%),radial-gradient(circle_at_85%_15%,rgba(94,58,140,0.22),transparent_26%)]" />
-          <div className="absolute inset-y-6 right-6 hidden w-[38%] rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(5,7,11,0.26))] lg:block">
-            <div className="absolute inset-4 rounded-[1.35rem] border border-dashed border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(9,11,16,0.32))]" />
-            <div className="absolute inset-x-8 bottom-8 text-[11px] uppercase tracking-[0.24em] text-white/35">Founder Portrait Area</div>
+          <div className="absolute inset-y-6 right-6 hidden w-[38%] overflow-hidden rounded-[1.7rem] border border-white/10 bg-black lg:block">
+            <Image
+              src="/mikaelf/armar_i_sidan_1.png"
+              alt="Founder portrait for the expert section"
+              fill
+              className="object-cover object-[52%_24%]"
+              sizes="(min-width: 1024px) 26vw, 100vw"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.08),rgba(4,6,9,0.18)_42%,rgba(4,6,9,0.42)),radial-gradient(circle_at_20%_18%,rgba(94,58,140,0.16),transparent_26%)]" />
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/8" />
           </div>
           <CardContent className="relative p-8 sm:p-9 lg:max-w-[58%]">
             <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">The Expert</p>
+            <h2 className="mt-4 font-serif text-4xl tracking-[-0.03em] text-[#f7f0e4]">Meet the founder behind the cut.</h2>
             <div className="mt-6 flex items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#8dbeb8]/25 bg-[#8dbeb8]/8 shadow-[0_0_40px_rgba(86,183,175,0.14)]">
                 <UserRound className="h-6 w-6 text-[#8dbeb8]" />
               </div>
               <div>
-                <p className="text-2xl font-semibold tracking-[-0.02em]">Tracy</p>
+                <p className="text-2xl font-semibold tracking-[-0.02em]">Mikael</p>
                 <p className="text-xs uppercase tracking-[0.24em] text-white/45">Strategic editor for product priorities</p>
               </div>
             </div>
             <p className="mt-6 text-base leading-7 text-[#c8c1b6]">
               The work is less about adding process and more about removing interference. The goal is a cleaner decision surface and a backlog you can actually trust.
             </p>
-            <div className="mt-7 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-[#d7d1c8] lg:hidden">
-              Reserved portrait block for future founder imagery.
+            <p className="mt-5 text-sm leading-7 text-white/58">
+              This is the person and perspective behind the offering, not a generic booking surface.
+            </p>
+            <div className="relative mt-7 overflow-hidden rounded-[1.6rem] border border-white/10 bg-black lg:hidden">
+              <div className="relative aspect-[4/5] w-full">
+                <Image
+                  src="/mikaelf/armar_i_sidan_1.png"
+                  alt="Founder portrait for the expert section"
+                  fill
+                  className="object-cover object-[50%_20%]"
+                  sizes="100vw"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.04),rgba(4,6,9,0.18)_44%,rgba(4,6,9,0.34)),radial-gradient(circle_at_20%_18%,rgba(94,58,140,0.12),transparent_26%)]" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.025))] text-[#f3efe7] shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
-          <CardContent className="grid gap-5 p-8 sm:grid-cols-3 sm:p-9">
-            <div className="rounded-3xl border border-white/8 bg-black/20 p-5">
-              <Scissors className="h-5 w-5 text-[#8dbeb8]" />
-              <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">1. Diagnose</p>
-              <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Identify the actual bottleneck instead of treating symptoms.</p>
+        <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] text-[#f3efe7] shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
+          <CardContent className="p-8 sm:p-9">
+            <div className="mb-7 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">How It Works</p>
+                <h3 className="mt-3 font-serif text-3xl tracking-[-0.03em] text-[#f7f0e4]">Three moves. One cleaner decision line.</h3>
+              </div>
             </div>
-            <div className="rounded-3xl border border-white/8 bg-black/20 p-5">
-              <Calendar className="h-5 w-5 text-[#8dbeb8]" />
-              <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">2. Cut</p>
-              <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Remove stale work, noisy requests, and false urgency.</p>
-            </div>
-            <div className="rounded-3xl border border-white/8 bg-black/20 p-5">
-              <Clock3 className="h-5 w-5 text-[#8dbeb8]" />
-              <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">3. Reset</p>
-              <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Leave with a clearer operating line and an actionable next move.</p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(4,7,10,0.34),rgba(4,7,10,0.2))] p-5">
+                <Scissors className="h-5 w-5 text-[#8dbeb8]" />
+                <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">1. Diagnose</p>
+                <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Identify the actual constraint behind the noise.</p>
+              </div>
+              <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(4,7,10,0.34),rgba(4,7,10,0.2))] p-5">
+                <Calendar className="h-5 w-5 text-[#8dbeb8]" />
+                <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">2. Cut</p>
+                <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Remove low-value urgency and expose the real decision.</p>
+              </div>
+              <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(4,7,10,0.34),rgba(4,7,10,0.2))] p-5">
+                <Clock3 className="h-5 w-5 text-[#8dbeb8]" />
+                <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">3. Reset</p>
+                <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Leave with a clearer decision surface and next move.</p>
+              </div>
             </div>
           </CardContent>
         </Card>
