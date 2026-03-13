@@ -2,13 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn, formatTime } from "@/lib/utils";
-import type { CustomQuestion } from "@/types";
+import { useSearchParams } from "next/navigation";
 import {
   addMonths,
   eachDayOfInterval,
@@ -23,19 +17,22 @@ import {
 } from "date-fns";
 import {
   ArrowRight,
-  Calendar,
   Check,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   Loader2,
-  Scissors,
-  UserRound,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { buildBarbershopPricingState, type BarbershopPricingState } from "@/lib/barbershop-config";
+import { cn, formatTime } from "@/lib/utils";
+import type { CustomQuestion } from "@/types";
 
 type Treatment = {
   name: string;
-  subtitle: string;
   slug: string;
   duration: string;
   summary: string;
@@ -61,35 +58,40 @@ type AvailabilityResponse = {
   error?: string;
 };
 
+type BarbershopConfigResponse = {
+  treatments: Record<string, BarbershopPricingState>;
+  error?: string;
+};
+
 const TREATMENTS: Treatment[] = [
   {
     name: "The Tracy Test",
-    subtitle: "30 min clarity cut",
     slug: "30-min-consultation",
     duration: "30 min",
-    summary: "A fast diagnostic call for when work feels messy, overloaded, or hard to prioritize.",
-    bullets: ["Quick situation read", "Main bottleneck identified", "Clear next step"],
+    summary: "A fast diagnostic call. You describe the mess, I tell you what I see. No prep needed, no invoice after.",
+    bullets: ["Quick situation read", "Main bottleneck identified", "Clear next step", "No strings attached."],
   },
   {
     name: "Backlog Surgery",
-    subtitle: "60 min deep cut",
     slug: "backlog-audit",
     duration: "60 min",
-    summary: "A working session for teams with a backlog that has grown noisy, stale, or hard to trust.",
+    summary:
+      "A working session for teams with a backlog that has grown noisy, stale, or hard to trust. We go through it together and come out with a shorter, honest list.",
     bullets: ["Backlog cleaned up", "Priorities made clearer", "What to drop, keep, or do next"],
   },
   {
-    name: "Chaos → Clarity Workshop",
-    subtitle: "2.5h full treatment",
+    name: "Chaos Clarity Workshop",
     slug: "prioritization-workshop",
     duration: "2.5h",
-    summary: "A deeper workshop for leaders who need alignment, decision clarity, and a better way to prioritize together.",
-    bullets: ["Shared direction", "Clear decision rules", "A practical way forward"],
+    summary:
+      "A deeper workshop for leaders who need alignment, real decision rules, and a prioritization model that survives Monday morning. Three spots at no cost while the format is being refined.",
+    bullets: ["Decision model built", "Shared prioritization criteria", "Clearer roadmap logic"],
   },
 ];
 
 export default function PriorityBarbershopPage() {
   const bookingRef = useRef<HTMLElement | null>(null);
+  const searchParams = useSearchParams();
 
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null);
   const [availabilityData, setAvailabilityData] = useState<AvailabilityResponse | null>(null);
@@ -105,6 +107,30 @@ export default function PriorityBarbershopPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [bookingResult, setBookingResult] = useState<{ id: string; google_meet_link?: string } | null>(null);
+  const [pricingBySlug, setPricingBySlug] = useState<Record<string, BarbershopPricingState>>({});
+  const [pricingError, setPricingError] = useState<string | null>(null);
+
+  const campaign = searchParams.get("campaign");
+
+  async function loadPricingConfig() {
+    try {
+      const response = await fetch("/api/barbershop-config");
+      const result: BarbershopConfigResponse = await response.json();
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error || "Could not load barbershop config");
+      }
+
+      setPricingBySlug(result.treatments || {});
+      setPricingError(null);
+    } catch (error) {
+      setPricingError(error instanceof Error ? error.message : "Could not load barbershop config");
+    }
+  }
+
+  useEffect(() => {
+    void loadPricingConfig();
+  }, []);
 
   useEffect(() => {
     if (!selectedTreatment) {
@@ -150,6 +176,10 @@ export default function PriorityBarbershopPage() {
     return () => controller.abort();
   }, [selectedTreatment]);
 
+  function getPricingState(slug: string) {
+    return pricingBySlug[slug] ?? buildBarbershopPricingState(slug);
+  }
+
   function handleTreatmentSelect(treatment: Treatment) {
     setSelectedTreatment(treatment);
     setCurrentMonth(new Date());
@@ -189,7 +219,7 @@ export default function PriorityBarbershopPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!availabilityData || !selectedSlot) {
+    if (!availabilityData || !selectedSlot || !selectedTreatment) {
       return;
     }
 
@@ -217,7 +247,7 @@ export default function PriorityBarbershopPage() {
           answers: answersList,
           source: "bookme",
           variant: "priority-barbershop",
-          campaign: null,
+          campaign: campaign ?? null,
         }),
       });
 
@@ -229,6 +259,7 @@ export default function PriorityBarbershopPage() {
 
       setBookingResult(result.booking);
       setSubmitError(null);
+      await loadPricingConfig();
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Could not complete booking");
     } finally {
@@ -244,32 +275,31 @@ export default function PriorityBarbershopPage() {
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startOffset = (getDay(monthStart) + 6) % 7;
+  const selectedPricing = selectedTreatment ? getPricingState(selectedTreatment.slug) : null;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#07090d] text-[#f3efe7]">
-      <div className="absolute inset-x-0 top-0 h-[38rem] bg-[radial-gradient(circle_at_top,_rgba(90,199,191,0.18),_transparent_38%),radial-gradient(circle_at_20%_20%,_rgba(81,49,122,0.26),_transparent_32%),linear-gradient(180deg,_rgba(255,255,255,0.03),_transparent_55%)]" />
-      <div className="absolute inset-x-0 top-[26rem] h-[30rem] bg-[linear-gradient(180deg,_rgba(10,17,24,0),_rgba(10,17,24,0.72)_35%,_rgba(7,9,13,1))]" />
+      <div className="absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top,_rgba(90,199,191,0.16),_transparent_38%),radial-gradient(circle_at_22%_16%,_rgba(81,49,122,0.24),_transparent_30%),linear-gradient(180deg,_rgba(255,255,255,0.03),_transparent_55%)]" />
+      <div className="absolute inset-x-0 top-[28rem] h-[36rem] bg-[linear-gradient(180deg,_rgba(10,17,24,0),_rgba(10,17,24,0.7)_35%,_rgba(7,9,13,1))]" />
 
-      <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-8 sm:px-8 lg:px-12 lg:pb-32 lg:pt-12">
-        <div className="mb-14 flex items-center justify-between border-b border-white/10 pb-5 text-[11px] uppercase tracking-[0.32em] text-[#8dbeb8]">
-          <span>Priority Barbershop</span>
-          <span className="hidden sm:inline">Editorial Booking Room</span>
+      <section className="relative mx-auto max-w-7xl px-6 pb-24 pt-8 sm:px-8 lg:px-12 lg:pb-36 lg:pt-12">
+        <div className="mb-12 border-b border-white/10 pb-5 text-[11px] uppercase tracking-[0.32em] text-[#8dbeb8]">
+          Priority Barbershop
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[0.94fr_1.06fr] lg:items-stretch lg:gap-10">
-          <div className="max-w-4xl">
-            <p className="mb-4 text-xs uppercase tracking-[0.35em] text-[#8dbeb8]">Trim the noise. Keep the signal.</p>
-            <h1 className="max-w-4xl font-serif text-5xl leading-[0.96] tracking-[-0.04em] text-[#f7f0e4] sm:text-6xl lg:text-[5.75rem]">
-              Priority
-              <br />
-              Barbershop
+        <div className="grid items-center gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:gap-12">
+          <div className="max-w-3xl">
+            <h1 className="font-serif text-[2rem] leading-[0.96] tracking-[-0.04em] text-[#f7f0e4] sm:text-[3rem] lg:text-[5.4rem]">
+              Priority Barbershop
             </h1>
-            <p className="mt-8 max-w-2xl text-lg leading-8 text-[#cfd5d2] sm:text-[1.2rem]">
-              A premium booking page for leaders who need sharper priorities, cleaner backlogs, and calmer delivery.
+            <p className="mt-6 text-[1.125rem] leading-8 text-[#ecf2ef] sm:text-[1.25rem]">Trim the noise. Keep the signal.</p>
+            <p className="mt-5 max-w-2xl text-[1.125rem] leading-8 text-[#d8ddd9] sm:text-[1.25rem]">
+              Three treatments. One direction: fewer priorities, better decisions. The first call is always on me.
             </p>
-            <div className="mt-10 flex flex-wrap gap-3">
+
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Button
-                className="h-12 rounded-full border border-[#8dbeb8]/60 bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] px-6 text-sm font-medium text-[#071014] shadow-[0_10px_40px_rgba(86,183,175,0.24)] hover:brightness-105"
+                className="h-12 min-h-[44px] rounded-full border border-[#8dbeb8]/60 bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] px-6 text-[0.95rem] font-medium text-[#071014] shadow-[0_10px_40px_rgba(86,183,175,0.24)] hover:brightness-105"
                 onClick={() => handleTreatmentSelectAndScroll(TREATMENTS[0])}
               >
                 Book a treatment
@@ -277,88 +307,60 @@ export default function PriorityBarbershopPage() {
               </Button>
               <a
                 href="#treatments"
-                className="inline-flex h-12 items-center rounded-full border border-white/12 bg-white/[0.02] px-6 text-sm text-[#f3efe7] transition hover:border-[#8dbeb8]/35 hover:bg-white/[0.05]"
+                className="inline-flex h-12 min-h-[44px] items-center justify-center rounded-full border border-white/14 bg-white/[0.03] px-6 text-[0.95rem] text-[#f6f0e7] transition hover:border-[#8dbeb8]/40 hover:bg-white/[0.06]"
               >
                 View treatments
               </a>
             </div>
-            <p className="mt-8 max-w-xl text-sm leading-7 text-white/55">
+
+            <p className="mt-6 max-w-xl text-[0.95rem] leading-7 text-[#d7dedb]">
               Choose a treatment, see live availability, and book the session without leaving the page.
             </p>
 
-            <div className="relative mt-10 overflow-hidden rounded-[1.9rem] border border-white/10 bg-black shadow-[0_24px_80px_rgba(0,0,0,0.3)] lg:hidden">
-              <div className="relative aspect-[4/5] w-full">
-                <Image
-                  src="/mikaelf/armar_kors_3_HERO.png"
-                  alt="Portrait of the founder in a dark editorial barbershop setting"
-                  fill
-                  className="object-cover object-[54%_18%]"
-                  sizes="100vw"
-                  priority
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.04),rgba(4,6,9,0.18)_44%,rgba(4,6,9,0.36)),radial-gradient(circle_at_20%_24%,rgba(94,58,140,0.18),transparent_28%)]" />
-              </div>
-            </div>
+            {pricingError && (
+              <p className="mt-4 text-sm text-[#d9b7c8]">
+                Pricing details could not be refreshed. Showing the latest fallback state.
+              </p>
+            )}
           </div>
 
-          <div className="grid gap-3 lg:grid-rows-[1fr_auto]">
-            <Card className="relative overflow-hidden rounded-[2.2rem] border-white/10 bg-[linear-gradient(180deg,#121821,#0d1218)] shadow-[0_24px_100px_rgba(0,0,0,0.42)] backdrop-blur lg:min-h-[29rem]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_26%,rgba(94,58,140,0.4),transparent_22%),radial-gradient(circle_at_58%_18%,rgba(141,190,184,0.16),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_38%)]" />
-              <div className="absolute inset-y-4 right-4 hidden w-[60%] overflow-hidden rounded-[2rem] border border-white/10 bg-black lg:block">
+          <Card className="relative overflow-hidden rounded-[2.2rem] border-white/10 bg-[linear-gradient(180deg,#121821,#0d1218)] shadow-[0_24px_100px_rgba(0,0,0,0.42)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_26%,rgba(94,58,140,0.4),transparent_22%),radial-gradient(circle_at_58%_18%,rgba(141,190,184,0.14),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_38%)]" />
+            <CardContent className="relative p-4 sm:p-5">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-[1.8rem] border border-white/10 bg-black">
                 <Image
                   src="/mikaelf/armar_kors_3_HERO.png"
-                  alt="Portrait of the founder in a dark editorial barbershop setting"
+                  alt="Portrait of Mikael Feltenmark in a dark editorial barbershop setting"
                   fill
-                  className="object-cover object-[54%_24%]"
-                  sizes="(min-width: 1024px) 40vw, 100vw"
+                  className="object-cover object-[54%_22%]"
+                  sizes="(min-width: 1024px) 42vw, 100vw"
                   priority
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.08),rgba(4,6,9,0.2)_42%,rgba(4,6,9,0.48)),radial-gradient(circle_at_18%_24%,rgba(94,58,140,0.22),transparent_28%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.04),rgba(4,6,9,0.16)_46%,rgba(4,6,9,0.42)),radial-gradient(circle_at_18%_24%,rgba(94,58,140,0.18),transparent_28%)]" />
                 <div className="absolute inset-0 ring-1 ring-inset ring-white/8" />
               </div>
-              <div className="absolute inset-y-6 left-6 hidden w-[22%] rounded-[1.8rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] lg:block" />
-              <CardContent className="relative p-6 sm:p-7 lg:flex lg:h-full lg:max-w-[28%] lg:items-end lg:p-8">
-                <div className="max-w-xs lg:max-w-none">
-                  <p className="text-[11px] uppercase tracking-[0.28em] text-[#d2b4f3]">Editorial booking room</p>
-                  <div className="mt-4 space-y-3 text-sm leading-6 text-[#ece4d8]">
-                    <p>Clarity over urgency</p>
-                    <p>Fewer priorities, better decisions</p>
-                    <p className="text-white/55">Human-led, not template-led</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="rounded-[1.7rem] border border-white/8 bg-[linear-gradient(180deg,#131922,#0c1016)] px-5 py-4 text-sm text-[#e9e1d5] shadow-[0_12px_36px_rgba(0,0,0,0.16)]">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[#b9afa1]">Positioning</p>
-              <p className="mt-3 leading-7 text-[#e9e1d5]">An editorial booking route for leaders who need a sharper decision line.</p>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
-      <section className="relative border-y border-white/8 bg-[linear-gradient(180deg,rgba(14,24,31,0.72),rgba(9,13,18,0.72))]">
-        <div className="mx-auto grid max-w-7xl gap-4 px-6 py-6 text-xs uppercase tracking-[0.22em] text-[#dce3df] sm:px-8 lg:grid-cols-3 lg:px-12">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-5">Backlog too large to trust</div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-5">Priorities changing faster than decisions</div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-5">Too many inputs, not enough editorial judgement</div>
-        </div>
-      </section>
-
-      <section id="treatments" className="relative mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12 lg:py-32">
-        <div className="mb-12 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <section id="treatments" className="relative mx-auto max-w-7xl px-6 py-24 sm:px-8 lg:px-12 lg:py-36">
+        <div className="mb-14 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">Treatments</p>
-            <h2 className="mt-3 max-w-3xl font-serif text-4xl tracking-[-0.03em] text-[#f7f0e4] sm:text-5xl">Choose the cut that fits the mess.</h2>
+            <h2 className="mt-4 font-serif text-[1.625rem] tracking-[-0.03em] text-[#f7f0e4] sm:text-[2rem]">
+              Three ways to get from noise to a cleaner decision line.
+            </h2>
           </div>
-          <p className="max-w-xl text-base leading-7 text-[#c8c1b6]">
-            Each treatment maps directly to an existing hidden event type and uses live availability from the current backend.
+          <p className="max-w-xl text-[0.95rem] leading-7 text-[#d0c8bc] sm:text-base">
+            Pick the format that fits the mess you are in right now. Each treatment uses the existing booking backend and live availability.
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3 lg:gap-6">
+        <div className="grid gap-6 lg:grid-cols-3">
           {TREATMENTS.map((treatment) => {
             const isSelected = selectedTreatment?.slug === treatment.slug;
+            const pricing = getPricingState(treatment.slug);
 
             return (
               <Card
@@ -379,7 +381,7 @@ export default function PriorityBarbershopPage() {
                   }
                 }}
                 className={cn(
-                  "group relative overflow-hidden rounded-[2rem] border border-white/20 bg-[linear-gradient(180deg,#202835,#171d27)] text-[#f3efe7] shadow-[0_36px_110px_rgba(0,0,0,0.5)] transition duration-300 hover:-translate-y-1 hover:border-[#8dbeb8]/38 hover:shadow-[0_44px_120px_rgba(0,0,0,0.56)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8dbeb8]/45 focus-visible:ring-offset-0",
+                  "group relative overflow-hidden rounded-[2rem] border border-white/20 bg-[linear-gradient(180deg,#1d2430,#151b25)] text-[#f3efe7] shadow-[0_36px_110px_rgba(0,0,0,0.5)] transition duration-300 hover:-translate-y-1 hover:border-[#8dbeb8]/38 hover:shadow-[0_44px_120px_rgba(0,0,0,0.56)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8dbeb8]/45 focus-visible:ring-offset-0",
                   isSelected && "border-[#b38ae0] bg-[linear-gradient(180deg,#241d31,#181d29)] shadow-[0_0_0_1px_rgba(179,138,224,0.34),0_0_40px_rgba(94,58,140,0.22),0_40px_120px_rgba(30,20,45,0.58)]"
                 )}
               >
@@ -401,33 +403,50 @@ export default function PriorityBarbershopPage() {
                     isSelected && "border-[#8f68bb]/40"
                   )}
                 />
-                <div
-                  className={cn(
-                    "pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.22))]",
-                    isSelected && "bg-[linear-gradient(180deg,transparent,rgba(94,58,140,0.18))]"
-                  )}
-                />
-                <CardContent className="flex h-full flex-col p-8">
+
+                <CardContent className="flex h-full flex-col p-7 sm:p-8">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className={cn("text-[11px] uppercase tracking-[0.3em] text-[#8dbeb8] transition duration-200", isSelected && "text-[#d2b4f3]")}>{treatment.subtitle}</p>
-                      <h3 className={cn("mt-4 text-[1.9rem] font-semibold tracking-[-0.03em] text-[#f7f0e4] transition duration-200", isSelected && "text-[#fcf8ff]")}>{treatment.name}</h3>
+                      <h3 className={cn("text-[1.25rem] font-semibold tracking-[-0.03em] text-[#f7f0e4] sm:text-[1.375rem]", isSelected && "text-[#fcf8ff]")}>
+                        {treatment.name}
+                      </h3>
                     </div>
-                    <span className={cn("rounded-full border border-white/12 bg-black/20 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-white/70 transition duration-200", isSelected && "border-[#8f68bb]/40 bg-[#5e3a8c]/18 text-[#e6d7fb]")}>
+                    <span
+                      className={cn(
+                        "rounded-full border border-white/12 bg-black/20 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-white/75 transition duration-200",
+                        isSelected && "border-[#8f68bb]/40 bg-[#5e3a8c]/18 text-[#e6d7fb]"
+                      )}
+                    >
                       {treatment.duration}
                     </span>
                   </div>
 
-                  <p className={cn("mt-6 text-base leading-7 text-[#d1cbc3] transition duration-200", isSelected && "text-[#e2dceb]")}>{treatment.summary}</p>
+                  <div className="mt-5">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border border-[#8dbeb8]/28 bg-[#8dbeb8]/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-[#d6f4f0]",
+                        pricing.mode === "metered" && !pricing.isFree && "border-[#8f68bb]/28 bg-[#5e3a8c]/14 text-[#eadbff]"
+                      )}
+                    >
+                      {pricing.badgeLabel}
+                    </span>
+                  </div>
 
-                  <div className={cn("mt-7 rounded-[1.4rem] border border-white/10 bg-black/24 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition duration-200", isSelected && "border-[#8f68bb]/28 bg-[linear-gradient(180deg,rgba(94,58,140,0.16),rgba(0,0,0,0.2))]")}>
-                    <div className="space-y-3 text-sm text-[#ebe3d7]">
-                    {treatment.bullets.map((bullet) => (
-                      <div key={bullet} className="flex items-center gap-3">
-                        <div className={cn("h-1.5 w-1.5 rounded-full bg-[#8dbeb8] transition duration-200", isSelected && "bg-[#c8a7ee] shadow-[0_0_14px_rgba(200,167,238,0.85)]")} />
-                        <span>{bullet}</span>
-                      </div>
-                    ))}
+                  <p className={cn("mt-6 text-[0.95rem] leading-7 text-[#d5cdc2] sm:text-base", isSelected && "text-[#e2dceb]")}>{treatment.summary}</p>
+
+                  <div
+                    className={cn(
+                      "mt-7 rounded-[1.4rem] border border-white/10 bg-black/24 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition duration-200",
+                      isSelected && "border-[#8f68bb]/28 bg-[linear-gradient(180deg,rgba(94,58,140,0.16),rgba(0,0,0,0.2))]"
+                    )}
+                  >
+                    <div className="space-y-3 text-[0.8125rem] text-[#ebe3d7] sm:text-sm">
+                      {treatment.bullets.map((bullet) => (
+                        <div key={bullet} className="flex items-start gap-3">
+                          <div className={cn("mt-1.5 h-1.5 w-1.5 rounded-full bg-[#8dbeb8] transition duration-200", isSelected && "bg-[#c8a7ee] shadow-[0_0_14px_rgba(200,167,238,0.85)]")} />
+                          <span>{bullet}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -437,13 +456,13 @@ export default function PriorityBarbershopPage() {
                       handleTreatmentSelectAndScroll(treatment);
                     }}
                     className={cn(
-                      "mt-10 h-11 rounded-full border px-5 text-sm transition duration-200",
+                      "mt-10 h-12 min-h-[44px] w-full rounded-full border px-5 text-[0.95rem] transition duration-200 sm:text-base",
                       isSelected
                         ? "border-[#c8a7ee] bg-[linear-gradient(135deg,#5e3a8c,#8c66b9_55%,#c6ece8)] text-[#071014] shadow-[0_14px_38px_rgba(94,58,140,0.34)] hover:brightness-105"
                         : "border-white/22 bg-white/[0.12] text-[#fffaf3] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:border-[#8dbeb8]/36 hover:bg-white/[0.16]"
                     )}
                   >
-                    {isSelected ? "Selected" : "Choose treatment"}
+                    {pricing.cardCta}
                   </Button>
                 </CardContent>
               </Card>
@@ -452,13 +471,57 @@ export default function PriorityBarbershopPage() {
         </div>
       </section>
 
-      <section className="relative mx-auto grid max-w-7xl gap-8 px-6 py-2 sm:px-8 lg:grid-cols-[1.02fr_0.98fr] lg:px-12 lg:py-8">
+      <section className="relative mx-auto max-w-7xl px-6 py-4 sm:px-8 lg:px-12 lg:py-8">
+        <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,#121820,#0c1016)] text-[#f8f3ea] shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
+          <CardContent className="p-8 sm:p-10">
+            <div className="mb-8 border-b border-white/8 pb-6">
+              <p className="text-xs uppercase tracking-[0.3em] text-[#99d0ca]">How It Works</p>
+            </div>
+
+            <div className="grid gap-8 sm:grid-cols-3 sm:gap-6">
+              <div className="relative pr-0 sm:pr-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">01</div>
+                </div>
+                <p className="text-[1rem] uppercase tracking-[0.2em] text-[#efe4ff]">Diagnose</p>
+                <p className="mt-4 text-[0.95rem] leading-7 text-[#f7efe4] sm:text-base">
+                  We find the one thing that&apos;s blocking everything else. Not a list of issues, one real bottleneck.
+                </p>
+                <div className="absolute right-0 top-0 hidden h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent sm:block" />
+              </div>
+
+              <div className="relative pr-0 sm:pr-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">02</div>
+                </div>
+                <p className="text-[1rem] uppercase tracking-[0.2em] text-[#efe4ff]">Cut</p>
+                <p className="mt-4 text-[0.95rem] leading-7 text-[#f7efe4] sm:text-base">
+                  We remove what&apos;s creating false urgency. The backlog gets shorter, not longer.
+                </p>
+                <div className="absolute right-0 top-0 hidden h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent sm:block" />
+              </div>
+
+              <div>
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">03</div>
+                </div>
+                <p className="text-[1rem] uppercase tracking-[0.2em] text-[#efe4ff]">Reset</p>
+                <p className="mt-4 text-[0.95rem] leading-7 text-[#f7efe4] sm:text-base">
+                  You leave with a clearer next move and a decision line your team can actually follow.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="relative mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12 lg:py-28">
         <Card className="relative overflow-hidden rounded-[2.1rem] border-white/10 bg-[linear-gradient(180deg,#0f141a,#0a0d12)] text-[#f3efe7] shadow-[0_18px_60px_rgba(0,0,0,0.26)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(141,190,184,0.12),transparent_24%),radial-gradient(circle_at_85%_15%,rgba(94,58,140,0.22),transparent_26%)]" />
           <div className="absolute inset-y-6 right-6 hidden w-[38%] overflow-hidden rounded-[1.7rem] border border-white/10 bg-black lg:block">
             <Image
               src="/mikaelf/armar_i_sidan_1.png"
-              alt="Founder portrait for the expert section"
+              alt="Portrait of Mikael Feltenmark"
               fill
               className="object-cover object-[52%_24%]"
               sizes="(min-width: 1024px) 26vw, 100vw"
@@ -466,29 +529,24 @@ export default function PriorityBarbershopPage() {
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.08),rgba(4,6,9,0.18)_42%,rgba(4,6,9,0.42)),radial-gradient(circle_at_20%_18%,rgba(94,58,140,0.16),transparent_26%)]" />
             <div className="absolute inset-0 ring-1 ring-inset ring-white/8" />
           </div>
-          <CardContent className="relative p-8 sm:p-9 lg:max-w-[58%]">
-            <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">The Expert</p>
-            <h2 className="mt-4 font-serif text-4xl tracking-[-0.03em] text-[#f7f0e4]">Meet the founder behind the cut.</h2>
-            <div className="mt-6 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#8dbeb8]/25 bg-[#8dbeb8]/8 shadow-[0_0_40px_rgba(86,183,175,0.14)]">
-                <UserRound className="h-6 w-6 text-[#8dbeb8]" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold tracking-[-0.02em]">Mikael</p>
-                <p className="text-xs uppercase tracking-[0.24em] text-white/45">Strategic editor for product priorities</p>
-              </div>
-            </div>
-            <p className="mt-6 text-base leading-7 text-[#c8c1b6]">
-              The work is less about adding process and more about removing interference. The goal is a cleaner decision surface and a backlog you can actually trust.
+
+          <CardContent className="relative p-8 sm:p-10 lg:max-w-[58%]">
+            <h2 className="font-serif text-[1.625rem] tracking-[-0.03em] text-[#f7f0e4] sm:text-[2rem]">The person behind the cut.</h2>
+            <p className="mt-6 text-[0.95rem] leading-8 text-[#d0c8bc] sm:text-base">
+              Mikael Feltenmark has spent 30 years at the intersection of tech and business, most recently as Nordic Change Lead at TUI Group where he drove digital sales transformation across four markets at €2B+ scale, and as Product Manager at AARO Systems where he built prioritization into a machine learning platform used for financial consolidation. Before that, Byggfakta Group: 25 legacy systems consolidated into one coherent platform.
             </p>
-            <p className="mt-5 text-sm leading-7 text-white/58">
-              This is the person and perspective behind the offering, not a generic booking surface.
+            <p className="mt-5 text-[0.95rem] leading-8 text-[#f0e7db] sm:text-base">
+              The method is the same every time. Find what actually matters. Remove what doesn&apos;t. Leave the team with fewer priorities they can trust instead of a long list nobody believes in.
             </p>
+            <p className="mt-5 text-[0.95rem] leading-8 text-[#cbc3b7] sm:text-base">
+              This is not a generic booking surface. It&apos;s a direct line to that experience.
+            </p>
+
             <div className="relative mt-7 overflow-hidden rounded-[1.6rem] border border-white/10 bg-black lg:hidden">
               <div className="relative aspect-[4/5] w-full">
                 <Image
                   src="/mikaelf/armar_i_sidan_1.png"
-                  alt="Founder portrait for the expert section"
+                  alt="Portrait of Mikael Feltenmark"
                   fill
                   className="object-cover object-[50%_20%]"
                   sizes="100vw"
@@ -498,89 +556,39 @@ export default function PriorityBarbershopPage() {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,#121820,#0c1016)] text-[#f8f3ea] shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
-          <CardContent className="p-8 sm:p-9">
-            <div className="mb-8 flex items-end justify-between gap-4 border-b border-white/8 pb-6">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#99d0ca]">How It Works</p>
-                <h3 className="mt-3 font-serif text-3xl tracking-[-0.03em] text-[#fff9f1]">Three moves. One cleaner decision line.</h3>
-              </div>
-            </div>
-            <div className="grid gap-6 sm:grid-cols-3 sm:gap-4">
-              <div className="relative pr-3 sm:pr-6">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">01</div>
-                  <Scissors className="h-5 w-5 text-[#9cd7d1]" />
-                </div>
-                <p className="text-sm uppercase tracking-[0.24em] text-[#d7c7ee]">Diagnose</p>
-                <p className="mt-3 text-sm leading-7 text-[#f7efe4]">See where the real bottleneck is.</p>
-                <div className="absolute right-0 top-0 hidden h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent sm:block" />
-              </div>
-              <div className="relative pr-3 sm:pr-6">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">02</div>
-                  <Calendar className="h-5 w-5 text-[#9cd7d1]" />
-                </div>
-                <p className="text-sm uppercase tracking-[0.24em] text-[#d7c7ee]">Cut</p>
-                <p className="mt-3 text-sm leading-7 text-[#f7efe4]">Remove noise and false urgency.</p>
-                <div className="absolute right-0 top-0 hidden h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent sm:block" />
-              </div>
-              <div>
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">03</div>
-                  <Clock3 className="h-5 w-5 text-[#9cd7d1]" />
-                </div>
-                <p className="text-sm uppercase tracking-[0.24em] text-[#d7c7ee]">Reset</p>
-                <p className="mt-3 text-sm leading-7 text-[#f7efe4]">Leave with a clearer next move.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </section>
 
-      <section ref={bookingRef} className="relative mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12 lg:py-32">
-        <div className="mb-12 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <section ref={bookingRef} className="relative mx-auto max-w-7xl px-6 py-24 sm:px-8 lg:px-12 lg:py-36">
+        <div className="mb-14 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">Booking</p>
-            <h2 className="mt-3 font-serif text-4xl tracking-[-0.03em] text-[#f7f0e4] sm:text-5xl">Book inline. No detours.</h2>
+            <h2 className="mt-4 font-serif text-[1.625rem] tracking-[-0.03em] text-[#f7f0e4] sm:text-[2rem]">Book inline. No detours.</h2>
           </div>
-          <p className="max-w-2xl text-base leading-7 text-[#c8c1b6]">
+          <p className="max-w-2xl text-[0.95rem] leading-7 text-[#d0c8bc] sm:text-base">
             Select a treatment to load live availability from the mapped event type, then choose a date, a time, and complete the booking here.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:gap-7">
+        <div className="grid gap-7 lg:grid-cols-[0.72fr_1.28fr]">
           <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,#10161c,#0b0f14)] text-[#f3efe7] shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
             <CardContent className="p-8">
               <p className="text-[11px] uppercase tracking-[0.28em] text-[#8dbeb8]">Selected treatment</p>
-              {selectedTreatment ? (
+              {selectedTreatment && selectedPricing ? (
                 <div className="mt-5 rounded-[1.85rem] border border-[#8dbeb8]/18 bg-[linear-gradient(180deg,rgba(94,58,140,0.18),rgba(141,190,184,0.08)_34%,rgba(255,255,255,0.03))] p-6 shadow-[0_22px_60px_rgba(34,40,66,0.22)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.26em] text-[#d7c7ee]">Now booking</p>
-                      <h3 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#fbf7ff]">{selectedTreatment.name}</h3>
-                      <p className="mt-2 text-xs uppercase tracking-[0.24em] text-[#b8ddd8]">{selectedTreatment.subtitle}</p>
+                      <h3 className="mt-3 text-[1.5rem] font-semibold tracking-[-0.03em] text-[#fbf7ff]">{selectedTreatment.name}</h3>
+                      <p className="mt-2 text-xs uppercase tracking-[0.24em] text-[#b8ddd8]">{selectedTreatment.duration}</p>
                     </div>
                     <div className="rounded-full border border-[#8dbeb8]/20 bg-black/20 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-[#d7c7ee]">
-                      Active
+                      {selectedPricing.badgeLabel}
                     </div>
                   </div>
-                  <p className="mt-5 text-base leading-7 text-[#d8d3df]">{selectedTreatment.summary}</p>
+                  <p className="mt-5 text-[0.95rem] leading-7 text-[#d8d3df] sm:text-base">{selectedTreatment.summary}</p>
                 </div>
               ) : (
-                <p className="mt-4 text-base leading-7 text-[#c8c1b6]">Choose one of the treatments above to load the booking interface.</p>
-              )}
-
-              {availabilityData?.eventType && (
-                <div className="mt-7 rounded-[1.75rem] border border-[#8dbeb8]/20 bg-[linear-gradient(180deg,rgba(141,190,184,0.1),rgba(94,58,140,0.08),rgba(255,255,255,0.03))] p-5 text-sm text-[#d7cec0]">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#8dbeb8]">Live configuration</p>
-                  <p className="mt-3 font-medium text-[#f3efe7]">{availabilityData.eventType.name}</p>
-                  <div className="mt-3 space-y-1 text-[#c6cfcc]">
-                    <p>Live duration: {availabilityData.eventType.duration_minutes} min</p>
-                    <p>Timezone: {availabilityData.timezone}</p>
-                  </div>
-                </div>
+                <p className="mt-4 text-[0.95rem] leading-7 text-[#c8c1b6] sm:text-base">Choose one of the treatments above to load the booking interface.</p>
               )}
 
               {bookingResult && selectedSlot && (
@@ -589,7 +597,7 @@ export default function PriorityBarbershopPage() {
                     <Check className="h-5 w-5" />
                     <p className="font-medium">Booking confirmed</p>
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-[#e8fffb]/90">
+                  <p className="mt-3 text-[0.95rem] leading-6 text-[#e8fffb]/90">
                     {format(selectedSlot.start, "EEEE, MMMM d")} at {formatTime(selectedSlot.start, timezone)} is locked in. A confirmation is on its way to {email}.
                   </p>
                 </div>
@@ -601,8 +609,8 @@ export default function PriorityBarbershopPage() {
             <CardContent className="p-8">
               {!selectedTreatment && (
                 <div className="rounded-[1.9rem] border border-dashed border-white/10 bg-white/[0.02] px-6 py-16 text-center">
-                  <p className="text-lg font-medium">Choose a treatment to begin.</p>
-                  <p className="mt-3 text-sm text-[#c8c1b6]">Availability will load here from the existing backend as soon as you select one.</p>
+                  <p className="text-[1.1rem] font-medium">Choose a treatment to begin.</p>
+                  <p className="mt-3 text-[0.95rem] text-[#c8c1b6]">Availability will load here from the existing backend as soon as you select one.</p>
                 </div>
               )}
 
@@ -637,9 +645,7 @@ export default function PriorityBarbershopPage() {
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </Button>
-                          <span className="text-sm uppercase tracking-[0.18em] text-[#d7cec0]">
-                            {format(currentMonth, "MMMM yyyy")}
-                          </span>
+                          <span className="text-sm uppercase tracking-[0.18em] text-[#d7cec0]">{format(currentMonth, "MMMM yyyy")}</span>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -698,8 +704,7 @@ export default function PriorityBarbershopPage() {
                         selectedSlots.length > 0 ? (
                           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                             {selectedSlots.map((slot) => {
-                              const isSelected =
-                                selectedSlot?.start.toISOString() === new Date(slot.start).toISOString();
+                              const isSelected = selectedSlot?.start.toISOString() === new Date(slot.start).toISOString();
 
                               return (
                                 <button
@@ -723,12 +728,10 @@ export default function PriorityBarbershopPage() {
                             })}
                           </div>
                         ) : (
-                          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-sm text-[#c8c1b6]">
-                            No open slots on this date.
-                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-[0.95rem] text-[#c8c1b6]">No open slots on this date.</div>
                         )
                       ) : (
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-sm text-[#c8c1b6]">
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-[0.95rem] text-[#c8c1b6]">
                           Pick a date first to reveal time slots.
                         </div>
                       )}
@@ -740,11 +743,11 @@ export default function PriorityBarbershopPage() {
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">3. Complete booking</p>
                         {selectedSlot ? (
-                          <p className="mt-2 text-sm text-[#d7cec0]">
+                          <p className="mt-2 text-[0.95rem] text-[#d7cec0]">
                             {format(selectedSlot.start, "EEEE, MMMM d")} at {formatTime(selectedSlot.start, timezone)}
                           </p>
                         ) : (
-                          <p className="mt-2 text-sm text-[#c8c1b6]">Select a time before submitting the form.</p>
+                          <p className="mt-2 text-[0.95rem] text-[#c8c1b6]">Select a time before submitting the form.</p>
                         )}
                       </div>
                     </div>
@@ -840,22 +843,17 @@ export default function PriorityBarbershopPage() {
                       </div>
 
                       {submitError && (
-                        <div className="md:col-span-2 rounded-2xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-100">
-                          {submitError}
-                        </div>
+                        <div className="md:col-span-2 rounded-2xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-100">{submitError}</div>
                       )}
 
-                      <div className="md:col-span-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/35">
-                          Submission uses `/api/bookings` with source `bookme` and variant `priority-barbershop`
-                        </p>
+                      <div className="md:col-span-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
                         <Button
                           type="submit"
                           disabled={!isFormValid() || submitting}
-                          className="h-11 rounded-full border border-[#8dbeb8]/60 bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] px-6 text-[#071014] shadow-[0_12px_35px_rgba(86,183,175,0.2)] hover:brightness-105"
+                          className="h-12 min-h-[44px] w-full rounded-full border border-[#8dbeb8]/60 bg-[linear-gradient(135deg,#8dbeb8,#c6ece8)] px-6 text-[0.95rem] text-[#071014] shadow-[0_12px_35px_rgba(86,183,175,0.2)] hover:brightness-105 sm:w-auto sm:text-base"
                         >
                           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                          Confirm booking
+                          {selectedPricing?.confirmLabel || "Confirm booking"}
                         </Button>
                       </div>
                     </form>
@@ -866,6 +864,15 @@ export default function PriorityBarbershopPage() {
           </Card>
         </div>
       </section>
+
+      <footer className="relative mx-auto max-w-7xl px-6 pb-12 sm:px-8 lg:px-12">
+        <div className="border-t border-white/10 pt-5 text-[0.75rem] leading-6 text-[#9ea4ab] sm:text-[0.8125rem]">
+          <span>A service by Mikael Feltenmark / Tech &amp; Change by Feltenmark AB </span>
+          <a href="https://techchange.io" target="_blank" rel="noreferrer" className="text-[#b5d8d4] underline-offset-4 transition hover:text-[#d8f5f1] hover:underline">
+            techchange.io
+          </a>
+        </div>
+      </footer>
     </main>
   );
 }
