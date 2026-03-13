@@ -18,7 +18,8 @@ export default async function PublicProfilePage() {
   const { data: activeEvents } = await supabase
     .from("event_types")
     .select("*")
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .eq("is_listed", true);
 
   const profile = settings as AdminSettings | null;
   const events = (activeEvents as EventType[]) || [];
