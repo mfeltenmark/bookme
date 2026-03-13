@@ -30,7 +30,6 @@ import {
   Clock3,
   Loader2,
   Scissors,
-  Sparkles,
   UserRound,
 } from "lucide-react";
 
@@ -68,24 +67,24 @@ const TREATMENTS: Treatment[] = [
     subtitle: "30 min clarity cut",
     slug: "30-min-consultation",
     duration: "30 min",
-    summary: "A sharp diagnostic session for teams that feel busy, blocked, or vaguely overcommitted.",
-    bullets: ["Fast intake", "Top constraint identified", "One immediate next move"],
+    summary: "A fast diagnostic call for when work feels messy, overloaded, or hard to prioritize.",
+    bullets: ["Quick situation read", "Main bottleneck identified", "Clear next step"],
   },
   {
     name: "Backlog Surgery",
     subtitle: "60 min deep cut",
     slug: "backlog-audit",
     duration: "60 min",
-    summary: "A hands-on prioritization session to remove drag, expose noise, and restore decision quality.",
-    bullets: ["Backlog triage", "Priority logic reset", "Cleaner delivery lane"],
+    summary: "A working session for teams with a backlog that has grown noisy, stale, or hard to trust.",
+    bullets: ["Backlog cleaned up", "Priorities made clearer", "What to drop, keep, or do next"],
   },
   {
     name: "Chaos → Clarity Workshop",
     subtitle: "2.5h full treatment",
     slug: "prioritization-workshop",
     duration: "2.5h",
-    summary: "A deeper editorial workshop for leaders who need alignment, order, and a usable prioritization system.",
-    bullets: ["Stakeholder alignment", "Decision criteria", "Operating cadence"],
+    summary: "A deeper workshop for leaders who need alignment, decision clarity, and a better way to prioritize together.",
+    bullets: ["Shared direction", "Clear decision rules", "A practical way forward"],
   },
 ];
 
@@ -303,8 +302,8 @@ export default function PriorityBarbershopPage() {
           </div>
 
           <div className="grid gap-3 lg:grid-rows-[1fr_auto]">
-            <Card className="relative min-h-[29rem] overflow-hidden rounded-[2.2rem] border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] shadow-[0_24px_100px_rgba(0,0,0,0.42)] backdrop-blur">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_26%,rgba(94,58,140,0.32),transparent_22%),radial-gradient(circle_at_58%_18%,rgba(141,190,184,0.16),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_38%)]" />
+            <Card className="relative overflow-hidden rounded-[2.2rem] border-white/10 bg-[linear-gradient(180deg,#121821,#0d1218)] shadow-[0_24px_100px_rgba(0,0,0,0.42)] backdrop-blur lg:min-h-[29rem]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_26%,rgba(94,58,140,0.4),transparent_22%),radial-gradient(circle_at_58%_18%,rgba(141,190,184,0.16),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.03),transparent_38%)]" />
               <div className="absolute inset-y-4 right-4 hidden w-[60%] overflow-hidden rounded-[2rem] border border-white/10 bg-black lg:block">
                 <Image
                   src="/mikaelf/armar_kors_3_HERO.png"
@@ -317,26 +316,22 @@ export default function PriorityBarbershopPage() {
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,9,0.08),rgba(4,6,9,0.2)_42%,rgba(4,6,9,0.48)),radial-gradient(circle_at_18%_24%,rgba(94,58,140,0.22),transparent_28%)]" />
                 <div className="absolute inset-0 ring-1 ring-inset ring-white/8" />
               </div>
-              <div className="absolute inset-y-6 left-6 hidden w-[26%] rounded-[1.8rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] lg:block" />
-              <CardContent className="relative flex h-full flex-col justify-end p-8 lg:max-w-[32%]">
-                <div>
-                  <div className="mb-7 flex items-center gap-3 text-sm text-[#8dbeb8]">
-                    <Sparkles className="h-4 w-4" />
-                    <span>For founders, product leads, and overloaded teams</span>
-                  </div>
-                  <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(3,5,8,0.3),rgba(3,5,8,0.5))] p-5 backdrop-blur-sm">
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-white/38">Editorial portrait</p>
-                    <p className="mt-3 text-sm leading-7 text-[#e5ddd0]">
-                      A human-led consultation offer, framed with the same level of intent as the booking experience itself.
-                    </p>
+              <div className="absolute inset-y-6 left-6 hidden w-[22%] rounded-[1.8rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] lg:block" />
+              <CardContent className="relative p-6 sm:p-7 lg:flex lg:h-full lg:max-w-[28%] lg:items-end lg:p-8">
+                <div className="max-w-xs lg:max-w-none">
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-[#d2b4f3]">Editorial booking room</p>
+                  <div className="mt-4 space-y-3 text-sm leading-6 text-[#ece4d8]">
+                    <p>Clarity over urgency</p>
+                    <p>Fewer priorities, better decisions</p>
+                    <p className="text-white/55">Human-led, not template-led</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="rounded-[1.7rem] border border-white/8 bg-white/[0.025] px-5 py-4 text-sm text-[#d8d4cd] shadow-[0_12px_36px_rgba(0,0,0,0.16)]">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Booking note</p>
-              <p className="mt-3 leading-7">This route is built to feel editorial up top and operational at the point of booking.</p>
+            <div className="rounded-[1.7rem] border border-white/8 bg-[linear-gradient(180deg,#131922,#0c1016)] px-5 py-4 text-sm text-[#e9e1d5] shadow-[0_12px_36px_rgba(0,0,0,0.16)]">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#b9afa1]">Positioning</p>
+              <p className="mt-3 leading-7 text-[#e9e1d5]">An editorial booking route for leaders who need a sharper decision line.</p>
             </div>
           </div>
         </div>
@@ -504,29 +499,40 @@ export default function PriorityBarbershopPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] text-[#f3efe7] shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
+        <Card className="rounded-[2rem] border-white/10 bg-[linear-gradient(180deg,#121820,#0c1016)] text-[#f8f3ea] shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
           <CardContent className="p-8 sm:p-9">
-            <div className="mb-7 flex items-end justify-between gap-4">
+            <div className="mb-8 flex items-end justify-between gap-4 border-b border-white/8 pb-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#8dbeb8]">How It Works</p>
-                <h3 className="mt-3 font-serif text-3xl tracking-[-0.03em] text-[#f7f0e4]">Three moves. One cleaner decision line.</h3>
+                <p className="text-xs uppercase tracking-[0.3em] text-[#99d0ca]">How It Works</p>
+                <h3 className="mt-3 font-serif text-3xl tracking-[-0.03em] text-[#fff9f1]">Three moves. One cleaner decision line.</h3>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(4,7,10,0.34),rgba(4,7,10,0.2))] p-5">
-                <Scissors className="h-5 w-5 text-[#8dbeb8]" />
-                <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">1. Diagnose</p>
-                <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Identify the actual constraint behind the noise.</p>
+            <div className="grid gap-6 sm:grid-cols-3 sm:gap-4">
+              <div className="relative pr-3 sm:pr-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">01</div>
+                  <Scissors className="h-5 w-5 text-[#9cd7d1]" />
+                </div>
+                <p className="text-sm uppercase tracking-[0.24em] text-[#d7c7ee]">Diagnose</p>
+                <p className="mt-3 text-sm leading-7 text-[#f7efe4]">See where the real bottleneck is.</p>
+                <div className="absolute right-0 top-0 hidden h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent sm:block" />
               </div>
-              <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(4,7,10,0.34),rgba(4,7,10,0.2))] p-5">
-                <Calendar className="h-5 w-5 text-[#8dbeb8]" />
-                <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">2. Cut</p>
-                <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Remove low-value urgency and expose the real decision.</p>
+              <div className="relative pr-3 sm:pr-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">02</div>
+                  <Calendar className="h-5 w-5 text-[#9cd7d1]" />
+                </div>
+                <p className="text-sm uppercase tracking-[0.24em] text-[#d7c7ee]">Cut</p>
+                <p className="mt-3 text-sm leading-7 text-[#f7efe4]">Remove noise and false urgency.</p>
+                <div className="absolute right-0 top-0 hidden h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent sm:block" />
               </div>
-              <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(4,7,10,0.34),rgba(4,7,10,0.2))] p-5">
-                <Clock3 className="h-5 w-5 text-[#8dbeb8]" />
-                <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-white/45">3. Reset</p>
-                <p className="mt-3 text-sm leading-7 text-[#d7cec0]">Leave with a clearer decision surface and next move.</p>
+              <div>
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#8f68bb]/38 bg-[#5e3a8c]/20 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e7d7fb]">03</div>
+                  <Clock3 className="h-5 w-5 text-[#9cd7d1]" />
+                </div>
+                <p className="text-sm uppercase tracking-[0.24em] text-[#d7c7ee]">Reset</p>
+                <p className="mt-3 text-sm leading-7 text-[#f7efe4]">Leave with a clearer next move.</p>
               </div>
             </div>
           </CardContent>
