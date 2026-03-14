@@ -1,3 +1,4 @@
+// src/lib/email/send.ts
 import { Resend } from "resend";
 
 let _resend: Resend | null = null;
@@ -9,11 +10,17 @@ function getResend(): Resend {
   return _resend;
 }
 
+interface EmailAttachment {
+  filename: string;
+  content: string; // base64
+}
+
 interface SendEmailParams {
   to: string;
   subject: string;
   html: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<boolean> {
@@ -26,6 +33,7 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
       subject: params.subject,
       html: params.html,
       replyTo: params.replyTo,
+      attachments: params.attachments,
     });
 
     if (error) {

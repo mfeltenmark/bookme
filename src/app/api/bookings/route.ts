@@ -1,10 +1,4 @@
 // src/app/api/bookings/route.ts
-// Replace the existing file with this version.
-// Key changes vs previous:
-//   - BookingRequest accepts optional source, variant, campaign
-//   - Defaults: source = "bookme", variant = null, campaign = null
-//   - These are stored on the booking row and forwarded to CRM webhook
-
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { sendBookingToCRM } from '@/lib/webhooks/crm-sync'
 import { getGoogleCalendarClient } from '@/lib/google/tokens'
@@ -29,7 +23,6 @@ const BookingRequestSchema = z.object({
     .optional()
     .default([]),
   start_time: z.string().datetime(),
-  // Tracking fields – all optional, backward compatible
   source: z.string().optional().default('bookme'),
   variant: z.string().nullable().optional().default(null),
   campaign: z.string().nullable().optional().default(null),
@@ -145,7 +138,6 @@ export async function POST(request: NextRequest) {
         status: 'confirmed',
         google_event_id: googleEventId,
         google_meet_link: googleMeetLink,
-        // Tracking
         source: source ?? 'bookme',
         variant: variant ?? null,
         campaign: campaign ?? null,
@@ -193,7 +185,7 @@ export async function POST(request: NextRequest) {
       console.error('CRM webhook error (non-fatal):', crmError)
     }
 
-    // 8. Send confirmation email (non-fatal)
+    // 8. Send confirmation email with ICS attachment (non-fatal)
     try {
       const { data: adminSettings } = await supabase
         .from('admin_settings')
@@ -220,8 +212,30 @@ export async function POST(request: NextRequest) {
         answers,
       })
 
+      const { generateICS } = await import('@/lib/email/ics')
+      const icsContent = generateICS({
+        uid: booking.id,
+        summary: `${eventType.name} – ${name}`,
+        startTime: startDate.toISOString(),
+        endTime: endDate.toISOString(),
+        meetLink: googleMeetLink,
+        organizerEmail: 'mikael@techchange.io',
+        attendeeEmail: email,
+        attendeeName: name,
+      })
+
       const { sendEmail } = await import('@/lib/email/send')
-      await sendEmail({ to: email, subject, html })
+      await sendEmail({
+        to: email,
+        subject,
+        html,
+        attachments: [
+          {
+            filename: 'booking.ics',
+            content: Buffer.from(icsContent).toString('base64'),
+          },
+        ],
+      })
     } catch (emailError) {
       console.error('Email send error (non-fatal):', emailError)
     }
