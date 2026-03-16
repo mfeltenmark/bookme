@@ -14,7 +14,7 @@ import {
   startOfMonth,
   subMonths,
 } from "date-fns";
-import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Loader2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,10 @@ type TreatmentConfig = {
   description: string;
   bullets: string[];
   cta: string;
+  durationLabel: string;
+  priceLabel: string;
+  secondaryPriceLabel?: string;
+  supportCue: string;
 };
 
 type EventTypeInfo = {
@@ -74,6 +78,9 @@ const TREATMENT_CONFIG: TreatmentConfig[] = [
       "A focused first conversation to understand where you're stuck, what's been tried, and what kind of prioritization help would make the biggest difference.",
     bullets: ["Understand the situation", "Clarify where you're stuck", "Find the right next step"],
     cta: "Book Clarity Cut",
+    durationLabel: "30 min",
+    priceLabel: "Free",
+    supportCue: "Good first step",
   },
   {
     title: "Priority Reset",
@@ -83,15 +90,22 @@ const TREATMENT_CONFIG: TreatmentConfig[] = [
       "A focused session to step back, reconnect current initiatives to business goals and strategic direction, and challenge what is truly worth prioritising now.",
     bullets: ["Reconnect initiatives to real goals", "Expose false urgency", "Create sharper focus"],
     cta: "Book Priority Reset",
+    durationLabel: "60 min",
+    priceLabel: "5,000 SEK",
+    supportCue: "Focused intervention",
   },
   {
-    title: "Chaos \u2192 Clarity Workshop",
+    title: "Chaos -> Clarity Workshop",
     subtitle: "2.5h full treatment",
     slug: "prioritization-workshop",
     description:
       "A working session to build prioritization logic leadership can actually trust, using your real constraints, trade-offs, and business goals.",
     bullets: ["Build a decision model", "Align on shared criteria", "Create roadmap clarity"],
     cta: "Book the Workshop",
+    durationLabel: "2.5h",
+    priceLabel: "First 3 free",
+    secondaryPriceLabel: "Then 15,000 SEK",
+    supportCue: "Launch offer",
   },
 ];
 
@@ -110,6 +124,7 @@ const HOW_IT_WORKS = [
 ];
 
 export default function BarbershopPageClient({ campaign }: { campaign: string | null }) {
+  const treatmentsRef = useRef<HTMLElement | null>(null);
   const bookingRef = useRef<HTMLElement | null>(null);
   const howItWorksRef = useRef<HTMLElement | null>(null);
 
@@ -139,22 +154,21 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
       setTreatmentsError(null);
 
       try {
-        const responses = await Promise.all(
-          TREATMENT_CONFIG.map(async (treatment) => {
-            const response = await fetch(`/api/event-types?slug=${treatment.slug}`);
+        const response = await fetch("/api/event-types?all=true");
 
-            if (!response.ok) {
-              if (response.status === 404) {
-                return null;
-              }
+        if (!response.ok) {
+          throw new Error("Could not load active event types.");
+        }
 
-              throw new Error(`Could not load event type for ${treatment.title}`);
-            }
+        const eventTypes: EventTypeInfo[] = await response.json();
+        const mappedSlugs = new Set(TREATMENT_CONFIG.map((treatment) => treatment.slug));
+        const activeMappedEventTypes = eventTypes.filter((eventType) => mappedSlugs.has(eventType.slug));
+        const eventTypeBySlug = new Map(activeMappedEventTypes.map((eventType) => [eventType.slug, eventType]));
 
-            const eventType: EventTypeInfo = await response.json();
-            return { ...treatment, eventType };
-          })
-        );
+        const responses = TREATMENT_CONFIG.map((treatment) => {
+          const eventType = eventTypeBySlug.get(treatment.slug);
+          return eventType ? { ...treatment, eventType } : null;
+        });
 
         if (isCancelled) {
           return;
@@ -323,6 +337,7 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
 
       setBookingResult(result.booking);
       setSubmitError(null);
+      bookingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Could not complete booking.");
     } finally {
@@ -342,18 +357,18 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
             <h1 className="mt-5 font-serif text-[2.7rem] leading-[0.92] tracking-[-0.05em] text-[#fbf7f0] sm:text-[4rem] lg:text-[5.4rem]">
               Welcome to the Priority Barbershop
             </h1>
-            <div className="mt-7 max-w-2xl space-y-4 text-[1.05rem] leading-8 text-[#dde5e3] sm:text-[1.2rem]">
-              <p>Your backlog is a mess.</p>
-              <p>Everything is priority 1.</p>
-              <p>Leadership wants everything yesterday.</p>
-              <p className="text-[#f5f1e8]">Bring your chaos. Leave with clarity.</p>
+            <div className="mt-7 max-w-2xl space-y-4 text-[1.05rem] leading-[1.48] text-[#dde5e3] sm:text-[1.2rem]">
+              <p className="text-[1.2rem] font-medium leading-[1.35] text-[#f5f1e8] sm:text-[1.45rem]">
+                Trim the noise. Keep the signal.
+              </p>
+              <p>Choose the session that fits the kind of mess you are in, then book directly on this page.</p>
             </div>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Button
-                className="h-12 min-h-[44px] rounded-full border border-[#7cd0c7]/60 bg-[linear-gradient(135deg,#73cbc3,#c5efea)] px-6 text-[0.95rem] font-medium text-[#071018] shadow-[0_16px_44px_rgba(76,195,187,0.24)] hover:brightness-105"
+                className="h-12 min-h-[44px] rounded-full border border-[#7cd0c7]/60 bg-[linear-gradient(135deg,#73cbc3,#c5efea)] px-6 text-base font-medium text-[#071018] shadow-[0_16px_44px_rgba(76,195,187,0.24)] hover:brightness-105"
                 onClick={() => {
-                  bookingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  treatmentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
               >
                 Choose your treatment
@@ -362,7 +377,7 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
 
               <Button
                 variant="outline"
-                className="h-12 min-h-[44px] rounded-full border-white/12 bg-white/[0.04] px-6 text-[0.95rem] text-[#f5f1e8] hover:border-[#7cd0c7]/45 hover:bg-white/[0.08]"
+                className="h-12 min-h-[44px] rounded-full border-white/12 bg-white/[0.04] px-6 text-base text-[#f5f1e8] hover:border-[#7cd0c7]/45 hover:bg-white/[0.08]"
                 onClick={() => {
                   howItWorksRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
@@ -392,11 +407,12 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
       </section>
 
       <section className="relative mx-auto max-w-7xl px-6 py-4 sm:px-8 lg:px-12">
+        <p className="mb-4 text-base font-medium leading-6 text-[#aeb4bc]">Typical situations</p>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {PROBLEM_STRIP.map((item) => (
             <div
               key={item}
-              className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] px-5 py-4 text-sm uppercase tracking-[0.16em] text-[#d8e4e1] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+              className="rounded-[1.4rem] border border-[#666666]/32 bg-[linear-gradient(180deg,rgba(102,102,102,0.12),rgba(255,255,255,0.03))] px-5 py-4 text-base uppercase tracking-[0.12em] text-[#e3e5ec] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
             >
               {item}
             </div>
@@ -404,7 +420,7 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
         </div>
       </section>
 
-      <section className="relative mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12 lg:py-28">
+      <section ref={treatmentsRef} className="relative mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12 lg:py-28">
         <div className="mb-12 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.32em] text-[#8acfc7]">Treatments</p>
@@ -412,9 +428,8 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
               Choose the treatment that fits the kind of mess you are in.
             </h2>
           </div>
-          <p className="max-w-2xl text-[0.98rem] leading-7 text-[#c6d1cf]">
-            These cards are a branded layer on top of the existing booking engine. Only treatments backed by active event
-            types are shown here.
+          <p className="max-w-2xl text-base leading-[1.48] text-[#c6d1cf]">
+            Choose the format that fits the kind of prioritization mess you are in right now.
           </p>
         </div>
 
@@ -428,12 +443,12 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
         ) : treatmentsError ? (
           <div className="rounded-[2rem] border border-red-400/20 bg-red-400/10 px-6 py-8 text-red-100">
             <p className="font-medium">Treatments could not be loaded.</p>
-            <p className="mt-2 text-sm text-red-100/80">{treatmentsError}</p>
+            <p className="mt-2 text-base leading-7 text-red-100/80">{treatmentsError}</p>
           </div>
         ) : activeTreatments.length === 0 ? (
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] px-6 py-10 text-center">
             <p className="text-lg font-medium text-[#f5f1e8]">No treatments are currently available.</p>
-            <p className="mt-3 text-sm leading-7 text-[#c6d1cf]">
+            <p className="mt-3 text-base leading-8 text-[#c6d1cf]">
               The page is respecting the current active event types in Bookme, so inactive treatments are hidden
               automatically.
             </p>
@@ -446,35 +461,86 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
               return (
                 <Card
                   key={treatment.slug}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedTreatment(treatment)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedTreatment(treatment);
+                    }
+                  }}
                   className={cn(
-                    "group relative overflow-hidden rounded-[2rem] border bg-[linear-gradient(180deg,#131d27,#0d1319)] text-[#f5f1e8] shadow-[0_26px_80px_rgba(0,0,0,0.34)] transition duration-300 hover:-translate-y-1 hover:border-[#8acfc7]/40 hover:shadow-[0_36px_90px_rgba(0,0,0,0.4)]",
-                    isSelected ? "border-[#8acfc7]/75 shadow-[0_0_0_1px_rgba(138,207,199,0.24),0_32px_90px_rgba(0,0,0,0.38)]" : "border-white/10"
+                    "group relative overflow-hidden rounded-[2rem] border bg-[linear-gradient(180deg,#141d27,#0c1218)] text-[#f5f1e8] shadow-[0_26px_80px_rgba(0,0,0,0.34)] transition duration-300 hover:-translate-y-1 hover:border-[#8acfc7]/34 hover:shadow-[0_36px_90px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8acfc7]/50",
+                    isSelected
+                      ? "border-[#8f68bb] bg-[linear-gradient(180deg,#241d31,#181d29)] shadow-[0_0_0_1px_rgba(179,138,224,0.34),0_0_40px_rgba(94,58,140,0.22),0_40px_120px_rgba(30,20,45,0.58)]"
+                      : "border-white/10"
                   )}
                 >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_38%)]" />
+                  <div
+                    className={cn(
+                      "absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_38%)]",
+                      isSelected && "bg-[radial-gradient(circle_at_top,rgba(94,58,140,0.4),transparent_44%)]"
+                    )}
+                  />
                   <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                   <CardContent className="relative flex h-full flex-col p-7 sm:p-8">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.24em] text-[#8acfc7]">{treatment.subtitle}</p>
+                        <p className="text-base font-medium leading-6 text-[#bbddd9]">{treatment.subtitle}</p>
                         <h3 className="mt-3 text-[1.45rem] font-semibold tracking-[-0.03em] text-[#fbf7f0]">
                           {treatment.title}
                         </h3>
                       </div>
                       {isSelected ? (
-                        <div className="rounded-full border border-[#8acfc7]/35 bg-[#8acfc7]/12 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-[#dff7f4]">
+                        <div className="rounded-full border border-[#c8a7ee]/45 bg-[#5e3a8c]/24 px-3 py-1 text-base leading-6 text-[#f7efff]">
                           Selected
                         </div>
                       ) : null}
                     </div>
 
-                    <p className="mt-6 text-[0.98rem] leading-7 text-[#c9d3d0]">{treatment.description}</p>
+                    <div className="mt-5 grid gap-2.5">
+                      <div className="flex flex-wrap gap-3 text-base leading-6">
+                        <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[#f5f1e8]">
+                          {treatment.durationLabel}
+                        </span>
+                        <span
+                          className={cn(
+                            "rounded-full border px-3 py-1.5 font-medium",
+                            treatment.slug === "30-min-consultation"
+                              ? "border-[#8acfc7]/34 bg-[#8acfc7]/12 text-[#dcfbf7]"
+                              : "border-[#8f68bb]/40 bg-[#5e3a8c]/24 text-[#f0e3ff]"
+                          )}
+                        >
+                          {treatment.priceLabel}
+                        </span>
+                        <span className="rounded-full border border-[#666666]/40 bg-[#666666]/10 px-3 py-1.5 text-[#dedede]">
+                          {treatment.supportCue}
+                        </span>
+                      </div>
+                      {treatment.secondaryPriceLabel ? (
+                        <div className="rounded-[1rem] border border-[#8f68bb]/40 bg-[linear-gradient(135deg,rgba(94,58,140,0.24),rgba(0,0,0,0.2))] px-4 py-3 text-base font-medium leading-7 text-[#f3e8ff]">
+                          3 FREE SPOTS REMAINING
+                          <span className="ml-2 text-[#d9cdee]">{treatment.secondaryPriceLabel}</span>
+                        </div>
+                      ) : null}
+                    </div>
 
-                    <div className="mt-7 rounded-[1.45rem] border border-white/10 bg-black/20 p-5">
-                      <div className="space-y-3 text-sm text-[#edf4f2]">
+                    <p className={cn("mt-5 text-base leading-[1.48] text-[#cfd7d8]", isSelected && "text-[#e7e0ef]")}>{treatment.description}</p>
+
+                    <div
+                      className={cn(
+                        "mt-6 rounded-[1.45rem] border p-5",
+                        isSelected
+                          ? "border-[#8f68bb]/40 bg-[linear-gradient(180deg,rgba(94,58,140,0.18),rgba(0,0,0,0.28))]"
+                          : "border-white/10 bg-black/20"
+                      )}
+                    >
+                      <div className={cn("space-y-2.5 text-base leading-[1.42] text-[#edf4f2]", isSelected && "text-[#f6efff]")}>
                         {treatment.bullets.map((bullet) => (
                           <div key={bullet} className="flex items-start gap-3">
-                            <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#8acfc7]" />
+                            <div className={cn("mt-2 h-2 w-2 rounded-full bg-[#8acfc7]", isSelected && "bg-[#caaeff] shadow-[0_0_14px_rgba(202,174,255,0.8)]")} />
                             <span>{bullet}</span>
                           </div>
                         ))}
@@ -483,12 +549,15 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
 
                     <Button
                       className={cn(
-                        "mt-8 h-12 min-h-[44px] w-full rounded-full border px-5 text-[0.95rem] transition duration-200",
+                        "mt-8 h-12 min-h-[44px] w-full rounded-full border px-5 text-base transition duration-200",
                         isSelected
                           ? "border-[#8acfc7]/60 bg-[linear-gradient(135deg,#73cbc3,#c5efea)] text-[#071018] shadow-[0_14px_36px_rgba(76,195,187,0.2)] hover:brightness-105"
                           : "border-white/14 bg-white/[0.06] text-[#f5f1e8] hover:border-[#8acfc7]/45 hover:bg-white/[0.1]"
                       )}
-                      onClick={() => handleTreatmentSelectAndScroll(treatment)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleTreatmentSelectAndScroll(treatment);
+                      }}
                     >
                       {treatment.cta}
                     </Button>
@@ -518,14 +587,18 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
             <h2 className="mt-4 font-serif text-[1.85rem] tracking-[-0.04em] text-[#fbf7f0] sm:text-[2.3rem]">
               Meet your Chief Priority Officer
             </h2>
-            <div className="mt-6 space-y-4 text-[0.98rem] leading-8 text-[#d7e0dd]">
-              <p className="text-[1.08rem] font-semibold text-[#fbf7f0]">Mikael Feltenmark</p>
-              <p>30+ years helping companies move from prioritization chaos to measurable decisions.</p>
-              <p>I step in when:</p>
-              <p>everything is urgent</p>
-              <p>teams are overloaded</p>
-              <p>leadership disagrees about what should be built</p>
-              <p className="text-[#fbf7f0]">I don&apos;t bring more meetings. I bring decision logic people can actually use.</p>
+            <div className="mt-6 max-w-3xl space-y-5 text-base leading-[1.48] text-[#d7e0dd] sm:text-[1.05rem]">
+              <p className="text-[1.15rem] font-semibold text-[#fbf7f0]">Mikael Feltenmark</p>
+              <p>
+                For more than 30 years, I have worked where business goals, technology reality, and difficult
+                trade-offs collide. I step in when everything feels important, teams are overloaded, and leaders need
+                a clearer way to decide what actually matters now.
+              </p>
+              <p>
+                The method is always the same: find what drives the most value, remove what does not, and leave the team
+                with fewer priorities they can actually trust.
+              </p>
+              <p className="text-[#fbf7f0]">This is not a generic booking page. It is a direct path into that work.</p>
             </div>
 
             <div className="relative mt-8 overflow-hidden rounded-[1.5rem] border border-white/10 bg-black lg:hidden">
@@ -574,9 +647,8 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
               Book your session on this page.
             </h2>
           </div>
-          <p className="max-w-2xl text-[0.98rem] leading-7 text-[#c6d1cf]">
-            Availability is loaded inline from the mapped event type. Booking is submitted through the existing Bookme
-            endpoint with the Priority Barbershop variant.
+          <p className="max-w-2xl text-base leading-[1.48] text-[#c6d1cf]">
+            Choose a treatment to see live availability and book directly on this page.
           </p>
         </div>
 
@@ -586,13 +658,26 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
               <p className="text-[11px] uppercase tracking-[0.26em] text-[#8acfc7]">Selected treatment</p>
 
               {selectedTreatment ? (
-                <div className="mt-5 rounded-[1.7rem] border border-[#8acfc7]/18 bg-[linear-gradient(180deg,rgba(138,207,199,0.12),rgba(255,255,255,0.03))] p-6">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#c8ece8]">{selectedTreatment.subtitle}</p>
+                <div className="mt-5 rounded-[1.7rem] border border-[#8acfc7]/18 bg-[linear-gradient(180deg,rgba(94,58,140,0.18),rgba(138,207,199,0.1),rgba(255,255,255,0.03))] p-6">
+                  <p className="text-base font-medium leading-6 text-[#c8ece8]">{selectedTreatment.subtitle}</p>
                   <h3 className="mt-3 text-[1.55rem] font-semibold tracking-[-0.03em] text-[#fbf7f0]">{selectedTreatment.title}</h3>
-                  <p className="mt-4 text-[0.98rem] leading-7 text-[#d5dfdc]">{selectedTreatment.description}</p>
+                  <div className="mt-4 flex flex-wrap gap-3 text-base leading-6">
+                    <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[#f5f1e8]">
+                      {selectedTreatment.durationLabel}
+                    </span>
+                    <span className="rounded-full border border-[#5e3a8c]/34 bg-[#5e3a8c]/14 px-3 py-1.5 text-[#eadfff]">
+                      {selectedTreatment.priceLabel}
+                    </span>
+                    {selectedTreatment.secondaryPriceLabel ? (
+                      <span className="rounded-full border border-[#8acfc7]/22 bg-[#8acfc7]/10 px-3 py-1.5 text-[#dff7f4]">
+                        {selectedTreatment.secondaryPriceLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 text-base leading-[1.46] text-[#d5dfdc]">{selectedTreatment.description}</p>
                 </div>
               ) : (
-                <div className="mt-5 rounded-[1.7rem] border border-dashed border-white/10 bg-white/[0.03] px-5 py-8 text-[#c6d1cf]">
+                <div className="mt-5 rounded-[1.7rem] border border-dashed border-white/10 bg-white/[0.03] px-5 py-8 text-base leading-7 text-[#c6d1cf]">
                   Choose a treatment above to start booking.
                 </div>
               )}
@@ -603,7 +688,7 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
                     <CheckCircle2 className="h-5 w-5" />
                     <p className="font-medium">Booking completed</p>
                   </div>
-                  <p className="mt-3 text-sm leading-7 text-[#ebfffc]/88">
+                  <p className="mt-3 text-base leading-7 text-[#ebfffc]/88">
                     Your booking request has been completed for {format(selectedSlot.start, "EEEE, MMMM d")} at{" "}
                     {formatTime(selectedSlot.start, timezone)}. A confirmation will be sent to {email}.
                   </p>
@@ -624,7 +709,7 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
               ) : !selectedTreatment ? (
                 <div className="rounded-[1.8rem] border border-dashed border-white/10 bg-white/[0.03] px-6 py-14 text-center">
                   <p className="text-lg font-medium text-[#f5f1e8]">No active treatment selected.</p>
-                  <p className="mt-3 text-sm leading-7 text-[#c6d1cf]">
+                  <p className="mt-3 text-base leading-8 text-[#c6d1cf]">
                     This section will activate automatically when there is at least one active mapped event type.
                   </p>
                 </div>
@@ -638,248 +723,295 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
               ) : availabilityError ? (
                 <div className="rounded-[1.8rem] border border-red-400/20 bg-red-400/10 px-6 py-8 text-red-100">
                   <p className="font-medium">Availability could not be loaded.</p>
-                  <p className="mt-2 text-sm text-red-100/80">{availabilityError}</p>
+                  <p className="mt-2 text-base leading-7 text-red-100/80">{availabilityError}</p>
                 </div>
               ) : availabilityData ? (
                 <div className="space-y-8">
-                  <div className="grid gap-8 xl:grid-cols-[0.98fr_1.02fr]">
-                    <div className="rounded-[1.7rem] border border-white/8 bg-black/20 p-5 sm:p-6">
-                      <div className="mb-5 flex items-center justify-between gap-4">
-                        <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">1. Pick a date</p>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full text-[#f5f1e8] hover:bg-white/[0.07] hover:text-[#c8ece8]"
-                            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <span className="text-sm uppercase tracking-[0.18em] text-[#d5dfdc]">{format(currentMonth, "MMMM yyyy")}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full text-[#f5f1e8] hover:bg-white/[0.07] hover:text-[#c8ece8]"
-                            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
+                  {bookingResult && selectedSlot ? (
+                    <div className="rounded-[1.9rem] border border-[#8acfc7]/24 bg-[linear-gradient(180deg,rgba(16,39,40,0.72),rgba(11,20,26,0.96))] p-6 sm:p-8">
+                      <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+                        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-[#8acfc7]/35 bg-[linear-gradient(180deg,rgba(138,207,199,0.18),rgba(138,207,199,0.08))]">
+                          <CheckCircle2 className="h-8 w-8 text-[#dff7f4]" />
                         </div>
-                      </div>
+                        <h3 className="text-[1.8rem] font-semibold tracking-[-0.03em] text-[#fbf7f0]">Booking confirmed</h3>
+                        <p className="mt-3 max-w-xl text-base leading-7 text-[#d6e6e2]">
+                          Your booking has been confirmed. A confirmation has been sent to {email}.
+                        </p>
 
-                      <div className="mb-2 grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-[0.18em] text-white/35">
-                        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-                          <div key={day} className="py-2">
-                            {day}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="grid grid-cols-7 gap-2">
-                        {Array.from({ length: startOffset }).map((_, index) => (
-                          <div key={`offset-${index}`} />
-                        ))}
-
-                        {daysInMonth.map((day) => {
-                          const dateString = format(day, "yyyy-MM-dd");
-                          const isAvailable = availableDates.has(dateString);
-                          const isPast = isBefore(day, startOfDay(new Date()));
-                          const isSelected = selectedDate === dateString;
-
-                          return (
-                            <button
-                              key={dateString}
-                              type="button"
-                              disabled={!isAvailable || isPast}
-                              onClick={() => handleDateSelect(dateString)}
-                              className={cn(
-                                "h-12 rounded-2xl border text-sm transition duration-200",
-                                isAvailable && !isPast
-                                  ? "cursor-pointer border-white/10 bg-white/[0.04] text-[#f5f1e8] hover:border-[#8acfc7]/55 hover:bg-[#8acfc7]/12"
-                                  : "cursor-default border-transparent bg-transparent text-white/20",
-                                isSameDay(day, new Date()) && "border-white/20",
-                                isSelected && "border-[#8acfc7] bg-[linear-gradient(135deg,#73cbc3,#c5efea)] text-[#071018] shadow-[0_12px_30px_rgba(76,195,187,0.22)]"
-                              )}
+                        <div className="mt-6 w-full rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-5 text-left">
+                          <p className="text-lg font-semibold text-[#fbf7f0]">{availabilityData.eventType.name}</p>
+                          <p className="mt-2 text-base leading-7 text-[#cdd7d4]">
+                            {format(selectedSlot.start, "EEEE, MMMM d, yyyy")}
+                          </p>
+                          <p className="text-base leading-7 text-[#cdd7d4]">
+                            {formatTime(selectedSlot.start, timezone)} - {formatTime(selectedSlot.end, timezone)}
+                          </p>
+                          {bookingResult.google_meet_link ? (
+                            <a
+                              href={bookingResult.google_meet_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-3 inline-flex items-center gap-2 text-base font-medium text-[#8acfc7] hover:text-[#dff7f4]"
                             >
-                              {format(day, "d")}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {Object.keys(availability).length === 0 ? (
-                        <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4 text-sm text-[#c6d1cf]">
-                          No open dates are available right now.
+                              <Video className="h-4 w-4" />
+                              Open Google Meet
+                            </a>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </div>
 
-                    <div className="rounded-[1.7rem] border border-white/8 bg-black/20 p-5 sm:p-6">
-                      <p className="mb-5 text-[11px] uppercase tracking-[0.24em] text-white/45">2. Pick a time</p>
-                      {selectedDate ? (
-                        selectedSlots.length > 0 ? (
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                            {selectedSlots.map((slot) => {
-                              const start = new Date(slot.start);
-                              const end = new Date(slot.end);
-                              const isSelected = selectedSlot?.start.toISOString() === start.toISOString();
+                        {availabilityData.eventType.confirmation_message ? (
+                          <div className="mt-6 w-full rounded-[1.4rem] border border-[#8acfc7]/18 bg-[linear-gradient(180deg,rgba(138,207,199,0.12),rgba(255,255,255,0.03))] p-5 text-left">
+                            {availabilityData.eventType.confirmation_message.split("\n").map((line, index) => (
+                              <p key={`${availabilityData.eventType.id}-confirmation-${index}`} className="text-base leading-7 text-[#e5f4f1]">
+                                {line}
+                              </p>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid gap-8 xl:grid-cols-[0.98fr_1.02fr]">
+                        <div className="rounded-[1.7rem] border border-white/8 bg-black/20 p-5 sm:p-6">
+                          <div className="mb-5 flex items-center justify-between gap-4">
+                            <p className="text-base font-medium leading-6 text-[#dfe6e5]">1. Pick a date</p>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full text-[#f5f1e8] hover:bg-white/[0.07] hover:text-[#c8ece8]"
+                                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </Button>
+                              <span className="text-base uppercase tracking-[0.16em] text-[#d5dfdc]">{format(currentMonth, "MMMM yyyy")}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full text-[#f5f1e8] hover:bg-white/[0.07] hover:text-[#c8ece8]"
+                                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="mb-2 grid grid-cols-7 gap-2 text-center text-base uppercase tracking-[0.08em] text-white/45">
+                            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                              <div key={day} className="py-2">
+                                {day}
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="grid grid-cols-7 gap-2">
+                            {Array.from({ length: startOffset }).map((_, index) => (
+                              <div key={`offset-${index}`} />
+                            ))}
+
+                            {daysInMonth.map((day) => {
+                              const dateString = format(day, "yyyy-MM-dd");
+                              const isAvailable = availableDates.has(dateString);
+                              const isPast = isBefore(day, startOfDay(new Date()));
+                              const isSelected = selectedDate === dateString;
 
                               return (
                                 <button
-                                  key={slot.start}
+                                  key={dateString}
                                   type="button"
-                                  onClick={() => {
-                                    setSelectedSlot({ start, end });
-                                    setBookingResult(null);
-                                    setSubmitError(null);
-                                  }}
+                                  disabled={!isAvailable || isPast}
+                                  onClick={() => handleDateSelect(dateString)}
                                   className={cn(
-                                    "rounded-2xl border px-4 py-3 text-sm transition duration-200",
-                                    isSelected
-                                      ? "border-[#8acfc7] bg-[linear-gradient(135deg,#73cbc3,#c5efea)] text-[#071018] shadow-[0_12px_30px_rgba(76,195,187,0.18)]"
-                                      : "border-white/10 bg-white/[0.04] text-[#f5f1e8] hover:border-[#8acfc7]/50 hover:bg-white/[0.08]"
+                                    "h-12 rounded-2xl border text-base transition duration-200",
+                                    isAvailable && !isPast
+                                      ? "cursor-pointer border-white/10 bg-white/[0.04] text-[#f5f1e8] hover:border-[#8acfc7]/55 hover:bg-[#8acfc7]/12"
+                                      : "cursor-default border-transparent bg-transparent text-white/20",
+                                    isSameDay(day, new Date()) && "border-white/20",
+                                    isSelected && "border-[#8acfc7] bg-[linear-gradient(135deg,#73cbc3,#c5efea)] text-[#071018] shadow-[0_12px_30px_rgba(76,195,187,0.22)]"
                                   )}
                                 >
-                                  {formatTime(start, timezone)}
+                                  {format(day, "d")}
                                 </button>
                               );
                             })}
                           </div>
-                        ) : (
-                          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-[0.95rem] text-[#c6d1cf]">
-                            No open slots on this date.
-                          </div>
-                        )
-                      ) : (
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-[0.95rem] text-[#c6d1cf]">
-                          Pick a date to reveal available times.
+
+                          {Object.keys(availability).length === 0 ? (
+                            <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4 text-base leading-7 text-[#c6d1cf]">
+                              No open dates are available right now.
+                            </div>
+                          ) : null}
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="rounded-[1.8rem] border border-white/8 bg-black/20 p-6 sm:p-7">
-                    <div className="mb-6">
-                      <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">3. Complete booking</p>
-                      {selectedSlot ? (
-                        <p className="mt-2 text-[0.98rem] text-[#d5dfdc]">
-                          {format(selectedSlot.start, "EEEE, MMMM d")} at {formatTime(selectedSlot.start, timezone)}
-                        </p>
-                      ) : (
-                        <p className="mt-2 text-[0.98rem] text-[#c6d1cf]">Select a time before submitting the form.</p>
-                      )}
-                    </div>
+                        <div className="rounded-[1.7rem] border border-white/8 bg-black/20 p-5 sm:p-6">
+                          <p className="mb-5 text-base font-medium leading-6 text-[#dfe6e5]">2. Pick a time</p>
+                          {selectedDate ? (
+                            selectedSlots.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                {selectedSlots.map((slot) => {
+                                  const start = new Date(slot.start);
+                                  const end = new Date(slot.end);
+                                  const isSelected = selectedSlot?.start.toISOString() === start.toISOString();
 
-                    <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-                      <div className="space-y-2">
-                        <Label htmlFor="barbershop-name" className="text-[#f5f1e8]">
-                          Name
-                        </Label>
-                        <Input
-                          id="barbershop-name"
-                          value={name}
-                          onChange={(event) => setName(event.target.value)}
-                          placeholder="Jane Smith"
-                          className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="barbershop-email" className="text-[#f5f1e8]">
-                          Email
-                        </Label>
-                        <Input
-                          id="barbershop-email"
-                          type="email"
-                          value={email}
-                          onChange={(event) => setEmail(event.target.value)}
-                          placeholder="jane@example.com"
-                          className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
-                          required
-                        />
-                      </div>
-
-                      {availabilityData.customQuestions.map((question) => (
-                        <div key={question.id} className="space-y-2 md:col-span-2">
-                          <Label htmlFor={`question-${question.id}`} className="text-[#f5f1e8]">
-                            {question.label}
-                            {question.is_required ? " *" : ""}
-                          </Label>
-
-                          {question.field_type === "textarea" ? (
-                            <Textarea
-                              id={`question-${question.id}`}
-                              value={answers[question.id] || ""}
-                              onChange={(event) => updateAnswer(question.id, event.target.value)}
-                              placeholder={question.placeholder || ""}
-                              rows={4}
-                              className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
-                              required={question.is_required}
-                            />
-                          ) : question.field_type === "select" && question.options ? (
-                            <select
-                              id={`question-${question.id}`}
-                              value={answers[question.id] || ""}
-                              onChange={(event) => updateAnswer(question.id, event.target.value)}
-                              className="flex h-10 w-full rounded-md border border-white/10 bg-[#0d141b] px-3 py-2 text-sm text-[#f5f1e8] focus:outline-none"
-                              required={question.is_required}
-                            >
-                              <option value="">{question.placeholder || "Select an option"}</option>
-                              {question.options.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
+                                  return (
+                                    <button
+                                      key={slot.start}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedSlot({ start, end });
+                                        setBookingResult(null);
+                                        setSubmitError(null);
+                                      }}
+                                      className={cn(
+                                        "rounded-2xl border px-4 py-3 text-base transition duration-200",
+                                        isSelected
+                                          ? "border-[#8acfc7] bg-[linear-gradient(135deg,#73cbc3,#c5efea)] text-[#071018] shadow-[0_12px_30px_rgba(76,195,187,0.18)]"
+                                          : "border-white/10 bg-white/[0.04] text-[#f5f1e8] hover:border-[#8acfc7]/50 hover:bg-white/[0.08]"
+                                      )}
+                                    >
+                                      {formatTime(start, timezone)}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-base leading-8 text-[#c6d1cf]">
+                                No open slots on this date.
+                              </div>
+                            )
                           ) : (
-                            <Input
-                              id={`question-${question.id}`}
-                              type={question.field_type === "number" ? "number" : "text"}
-                              value={answers[question.id] || ""}
-                              onChange={(event) => updateAnswer(question.id, event.target.value)}
-                              placeholder={question.placeholder || ""}
-                              className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
-                              required={question.is_required}
-                            />
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-base leading-8 text-[#c6d1cf]">
+                              Pick a date to reveal available times.
+                            </div>
                           )}
                         </div>
-                      ))}
-
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="barbershop-notes" className="text-[#f5f1e8]">
-                          Share your chaos
-                        </Label>
-                        <Textarea
-                          id="barbershop-notes"
-                          value={notes}
-                          onChange={(event) => setNotes(event.target.value)}
-                          placeholder="Give a short sense of the backlog, pressure, or decision tension you want to work through."
-                          rows={4}
-                          className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
-                        />
                       </div>
 
-                      {submitError ? (
-                        <div className="md:col-span-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-100">
-                          {submitError}
+                      <div className="rounded-[1.8rem] border border-white/8 bg-black/20 p-6 sm:p-7">
+                        <div className="mb-6">
+                          <p className="text-base font-medium leading-6 text-[#dfe6e5]">3. Complete booking</p>
+                          {selectedSlot ? (
+                            <p className="mt-2 text-base leading-8 text-[#d5dfdc]">
+                              {format(selectedSlot.start, "EEEE, MMMM d")} at {formatTime(selectedSlot.start, timezone)}
+                            </p>
+                          ) : (
+                            <p className="mt-2 text-base leading-8 text-[#c6d1cf]">Select a time before submitting the form.</p>
+                          )}
                         </div>
-                      ) : null}
 
-                      <div className="md:col-span-2 flex justify-end">
-                        <Button
-                          type="submit"
-                          disabled={!isFormValid() || submitting}
-                          className="h-12 min-h-[44px] w-full rounded-full border border-[#7cd0c7]/60 bg-[linear-gradient(135deg,#73cbc3,#c5efea)] px-6 text-[0.95rem] font-medium text-[#071018] shadow-[0_14px_36px_rgba(76,195,187,0.2)] hover:brightness-105 sm:w-auto"
-                        >
-                          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                          Confirm booking
-                        </Button>
+                        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+                          <div className="space-y-2">
+                            <Label htmlFor="barbershop-name" className="text-[#f5f1e8]">
+                              Name
+                            </Label>
+                            <Input
+                              id="barbershop-name"
+                              value={name}
+                              onChange={(event) => setName(event.target.value)}
+                              placeholder="Jane Smith"
+                              className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="barbershop-email" className="text-[#f5f1e8]">
+                              Email
+                            </Label>
+                            <Input
+                              id="barbershop-email"
+                              type="email"
+                              value={email}
+                              onChange={(event) => setEmail(event.target.value)}
+                              placeholder="jane@example.com"
+                              className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
+                              required
+                            />
+                          </div>
+
+                          {availabilityData.customQuestions.map((question) => (
+                            <div key={question.id} className="space-y-2 md:col-span-2">
+                              <Label htmlFor={`question-${question.id}`} className="text-[#f5f1e8]">
+                                {question.label}
+                                {question.is_required ? " *" : ""}
+                              </Label>
+
+                              {question.field_type === "textarea" ? (
+                                <Textarea
+                                  id={`question-${question.id}`}
+                                  value={answers[question.id] || ""}
+                                  onChange={(event) => updateAnswer(question.id, event.target.value)}
+                                  placeholder={question.placeholder || ""}
+                                  rows={4}
+                                  className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
+                                  required={question.is_required}
+                                />
+                              ) : question.field_type === "select" && question.options ? (
+                                <select
+                                  id={`question-${question.id}`}
+                                  value={answers[question.id] || ""}
+                                  onChange={(event) => updateAnswer(question.id, event.target.value)}
+                                  className="flex h-10 w-full rounded-md border border-white/10 bg-[#0d141b] px-3 py-2 text-base text-[#f5f1e8] focus:outline-none"
+                                  required={question.is_required}
+                                >
+                                  <option value="">{question.placeholder || "Select an option"}</option>
+                                  {question.options.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <Input
+                                  id={`question-${question.id}`}
+                                  type={question.field_type === "number" ? "number" : "text"}
+                                  value={answers[question.id] || ""}
+                                  onChange={(event) => updateAnswer(question.id, event.target.value)}
+                                  placeholder={question.placeholder || ""}
+                                  className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
+                                  required={question.is_required}
+                                />
+                              )}
+                            </div>
+                          ))}
+
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="barbershop-notes" className="text-[#f5f1e8]">
+                              Share your chaos
+                            </Label>
+                            <Textarea
+                              id="barbershop-notes"
+                              value={notes}
+                              onChange={(event) => setNotes(event.target.value)}
+                              placeholder="Give a short sense of the backlog, pressure, or decision tension you want to work through."
+                              rows={4}
+                              className="border-white/10 bg-white/[0.04] text-[#f5f1e8] placeholder:text-white/30 focus-visible:ring-[#8acfc7]/60"
+                            />
+                          </div>
+
+                          {submitError ? (
+                            <div className="md:col-span-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-base leading-7 text-red-100">
+                              {submitError}
+                            </div>
+                          ) : null}
+
+                          <div className="md:col-span-2 flex justify-end">
+                            <Button
+                              type="submit"
+                              disabled={!isFormValid() || submitting}
+                              className="h-12 min-h-[44px] w-full rounded-full border border-[#7cd0c7]/60 bg-[linear-gradient(135deg,#73cbc3,#c5efea)] px-6 text-base font-medium text-[#071018] shadow-[0_14px_36px_rgba(76,195,187,0.2)] hover:brightness-105 sm:w-auto"
+                            >
+                              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                              Confirm booking
+                            </Button>
+                          </div>
+                        </form>
                       </div>
-                    </form>
-                  </div>
+                    </>
+                  )}
                 </div>
               ) : null}
             </CardContent>

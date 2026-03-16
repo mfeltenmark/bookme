@@ -195,7 +195,11 @@ export async function POST(request: NextRequest) {
       const tz = adminSettings?.timezone ?? 'Europe/Stockholm'
       const dateStr = startDate.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz })
       const timeStr = startDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }) + ' – ' + endDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })
-      const cancelUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/booking/${booking.id}/cancel?token=${booking.cancellation_token}`
+      const appUrl =
+        process.env.NEXT_PUBLIC_BASE_URL ??
+        process.env.NEXT_PUBLIC_APP_URL ??
+        'http://localhost:3000'
+      const cancelUrl = `${appUrl}/booking/${booking.id}/cancel?token=${booking.cancellation_token}`
 
       const { bookingConfirmationEmail } = await import('@/lib/email/templates/booking-confirmation')
       const { subject, html } = bookingConfirmationEmail({
