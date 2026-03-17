@@ -351,6 +351,13 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
       <div className="absolute inset-x-0 top-[18rem] h-[52rem] bg-[linear-gradient(180deg,rgba(7,16,24,0),rgba(7,16,24,0.68)_35%,rgba(7,16,24,1))]" />
 
       <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-8 sm:px-8 lg:px-12 lg:pb-28 lg:pt-12">
+        <a
+          href="https://techchange.io/"
+          className="mb-6 inline-flex items-center border border-white/10 bg-[#0c141b]/88 px-3.5 py-2 text-sm font-medium tracking-[0.02em] text-[#d9e2df] transition-colors hover:border-[#7cd0c7]/30 hover:bg-[#111b23] hover:text-[#f5f1e8] sm:mb-8"
+        >
+          ← Back to Tech &amp; Change
+        </a>
+
         <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="max-w-3xl">
             <p className="text-[11px] uppercase tracking-[0.34em] text-[#8acfc7]">TECH &amp; CHANGE presents</p>
