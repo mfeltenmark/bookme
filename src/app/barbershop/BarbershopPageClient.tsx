@@ -596,6 +596,7 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
             </h2>
             <div className="mt-6 max-w-3xl space-y-5 text-base leading-[1.48] text-[#d7e0dd] sm:text-[1.05rem]">
               <p className="text-[1.15rem] font-semibold text-[#fbf7f0]">Mikael Feltenmark</p>
+              <p>Expertly cutting through messy priorities.</p>
               <p>
                 For more than 30 years, I have worked where business goals, technology reality, and difficult
                 trade-offs collide. I step in when everything feels important, teams are overloaded, and leaders need
