@@ -31,9 +31,13 @@ type TreatmentConfig = {
   bullets: string[];
   cta: string;
   durationLabel: string;
-  priceLabel: string;
+  priceLabel?: string;
   secondaryPriceLabel?: string;
   supportCue: string;
+  chips?: string[];
+  badgeLabel?: string;
+  bookable?: boolean;
+  href?: string;
 };
 
 type EventTypeInfo = {
@@ -49,6 +53,10 @@ type EventTypeInfo = {
 
 type ActiveTreatment = TreatmentConfig & {
   eventType: EventTypeInfo;
+};
+
+type DisplayTreatment = TreatmentConfig & {
+  eventType?: EventTypeInfo;
 };
 
 type AvailabilityResponse = {
@@ -73,7 +81,7 @@ const TREATMENT_CONFIG: TreatmentConfig[] = [
   {
     title: "Clarity Cut",
     subtitle: "30 min clarity call",
-    slug: "30-min-consultation",
+    slug: "clarity-cut-call",
     description:
       "A focused first conversation to understand where you're stuck, what's been tried, and what kind of prioritization help would make the biggest difference.",
     bullets: ["Understand the situation", "Clarify where you're stuck", "Find the right next step"],
@@ -87,20 +95,27 @@ const TREATMENT_CONFIG: TreatmentConfig[] = [
     subtitle: "60 min deep cut",
     slug: "backlog-audit",
     description:
-      "A focused session to step back, reconnect current initiatives to business goals and strategic direction, and challenge what is truly worth prioritising now.",
-    bullets: ["Reconnect initiatives to real goals", "Expose false urgency", "Create sharper focus"],
-    cta: "Book Priority Reset",
+      "A sharper way into the Product Focus Sprint: helping you step back, reconnect current initiatives to business goals, and clarify whether focused prioritization work is the right next move.",
+    bullets: ["Reconnect initiatives to real goals", "Expose false urgency", "Clarify the strongest next move"],
+    cta: "Explore Product Focus Sprint",
     durationLabel: "60 min",
-    priceLabel: "5,000 SEK",
-    supportCue: "Focused intervention",
+    supportCue: "Focused next step",
+    chips: ["60 min", "Sprint route", "Focused next step"],
+    badgeLabel: "Into Product Focus Sprint",
+    bookable: false,
+    href: "https://techchange.io/#services",
   },
   {
     title: "Chaos -> Clarity Workshop",
     subtitle: "2.5h full treatment",
     slug: "prioritization-workshop",
     description:
-      "A working session to build prioritization logic leadership can actually trust, using your real constraints, trade-offs, and business goals.",
-    bullets: ["Build a decision model", "Align on shared criteria", "Create roadmap clarity"],
+      "A hands-on workshop to build prioritization logic your leadership team can actually use: with calibrated weighting, shared criteria, and practical outputs you can keep using after the session.",
+    bullets: [
+      "Calibrate your prioritization weights",
+      "Score your backlog against shared criteria",
+      "Take away tools your team can keep using",
+    ],
     cta: "Book the Workshop",
     durationLabel: "2.5h",
     priceLabel: "First 3 free",
@@ -128,7 +143,7 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
   const bookingRef = useRef<HTMLElement | null>(null);
   const howItWorksRef = useRef<HTMLElement | null>(null);
 
-  const [activeTreatments, setActiveTreatments] = useState<ActiveTreatment[]>([]);
+  const [displayTreatments, setDisplayTreatments] = useState<DisplayTreatment[]>([]);
   const [treatmentsLoading, setTreatmentsLoading] = useState(true);
   const [treatmentsError, setTreatmentsError] = useState<string | null>(null);
   const [selectedTreatment, setSelectedTreatment] = useState<ActiveTreatment | null>(null);
@@ -167,6 +182,12 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
 
         const responses = TREATMENT_CONFIG.map((treatment) => {
           const eventType = eventTypeBySlug.get(treatment.slug);
+          const isBookable = treatment.bookable !== false;
+
+          if (!isBookable) {
+            return { ...treatment };
+          }
+
           return eventType ? { ...treatment, eventType } : null;
         });
 
@@ -174,22 +195,26 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
           return;
         }
 
-        const visibleTreatments = responses.filter((item): item is ActiveTreatment => item !== null);
-        setActiveTreatments(visibleTreatments);
+        const visibleTreatments = responses.filter((item): item is DisplayTreatment => item !== null);
+        const visibleBookableTreatments = visibleTreatments.filter(
+          (item): item is ActiveTreatment => item.bookable !== false && Boolean(item.eventType)
+        );
+
+        setDisplayTreatments(visibleTreatments);
         setSelectedTreatment((current) => {
           if (current) {
-            const stillActive = visibleTreatments.find((item) => item.slug === current.slug);
+            const stillActive = visibleBookableTreatments.find((item) => item.slug === current.slug);
             if (stillActive) {
               return stillActive;
             }
           }
 
-          return visibleTreatments[0] ?? null;
+          return visibleBookableTreatments[0] ?? null;
         });
       } catch (error) {
         if (!isCancelled) {
           setTreatmentsError(error instanceof Error ? error.message : "Could not load available treatments.");
-          setActiveTreatments([]);
+          setDisplayTreatments([]);
           setSelectedTreatment(null);
         }
       } finally {
@@ -452,7 +477,7 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
             <p className="font-medium">Treatments could not be loaded.</p>
             <p className="mt-2 text-base leading-7 text-red-100/80">{treatmentsError}</p>
           </div>
-        ) : activeTreatments.length === 0 ? (
+        ) : displayTreatments.length === 0 ? (
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] px-6 py-10 text-center">
             <p className="text-lg font-medium text-[#f5f1e8]">No treatments are currently available.</p>
             <p className="mt-3 text-base leading-8 text-[#c6d1cf]">
@@ -461,34 +486,45 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
             </p>
           </div>
         ) : (
-          <div className={cn("grid gap-6", activeTreatments.length === 1 ? "max-w-3xl" : activeTreatments.length === 2 ? "lg:grid-cols-2" : "lg:grid-cols-3")}>
-            {activeTreatments.map((treatment) => {
+          <div className={cn("grid gap-6", displayTreatments.length === 1 ? "max-w-3xl" : displayTreatments.length === 2 ? "lg:grid-cols-2" : "lg:grid-cols-3")}>
+            {displayTreatments.map((treatment) => {
+              const isBookable = treatment.bookable !== false;
               const isSelected = selectedTreatment?.slug === treatment.slug;
+              const isFeaturedRoute = !isBookable;
+              const chips = treatment.chips ?? [treatment.durationLabel, treatment.priceLabel, treatment.supportCue].filter(Boolean);
+              const badgeLabel = isBookable ? (isSelected ? "Selected" : null) : treatment.badgeLabel;
 
               return (
                 <Card
                   key={treatment.slug}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={isSelected}
-                  onClick={() => setSelectedTreatment(treatment)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setSelectedTreatment(treatment);
-                    }
-                  }}
+                  role={isBookable ? "button" : undefined}
+                  tabIndex={isBookable ? 0 : undefined}
+                  aria-pressed={isBookable ? isSelected : undefined}
+                  onClick={isBookable ? () => setSelectedTreatment(treatment as ActiveTreatment) : undefined}
+                  onKeyDown={
+                    isBookable
+                      ? (event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedTreatment(treatment as ActiveTreatment);
+                          }
+                        }
+                      : undefined
+                  }
                   className={cn(
                     "group relative overflow-hidden rounded-[2rem] border bg-[linear-gradient(180deg,#141d27,#0c1218)] text-[#f5f1e8] shadow-[0_26px_80px_rgba(0,0,0,0.34)] transition duration-300 hover:-translate-y-1 hover:border-[#8acfc7]/34 hover:shadow-[0_36px_90px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8acfc7]/50",
                     isSelected
                       ? "border-[#8f68bb] bg-[linear-gradient(180deg,#241d31,#181d29)] shadow-[0_0_0_1px_rgba(179,138,224,0.34),0_0_40px_rgba(94,58,140,0.22),0_40px_120px_rgba(30,20,45,0.58)]"
+                      : isFeaturedRoute
+                        ? "border-[#8f68bb]/35 bg-[linear-gradient(180deg,#1d2130,#121722)] shadow-[0_0_0_1px_rgba(179,138,224,0.16),0_20px_70px_rgba(30,20,45,0.34)]"
                       : "border-white/10"
                   )}
                 >
                   <div
                     className={cn(
                       "absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_38%)]",
-                      isSelected && "bg-[radial-gradient(circle_at_top,rgba(94,58,140,0.4),transparent_44%)]"
+                      isSelected && "bg-[radial-gradient(circle_at_top,rgba(94,58,140,0.4),transparent_44%)]",
+                      isFeaturedRoute && !isSelected && "bg-[radial-gradient(circle_at_top,rgba(94,58,140,0.22),transparent_42%)]"
                     )}
                   />
                   <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
@@ -500,31 +536,32 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
                           {treatment.title}
                         </h3>
                       </div>
-                      {isSelected ? (
+                      {badgeLabel ? (
                         <div className="rounded-full border border-[#c8a7ee]/45 bg-[#5e3a8c]/24 px-3 py-1 text-base leading-6 text-[#f7efff]">
-                          Selected
+                          {badgeLabel}
                         </div>
                       ) : null}
                     </div>
 
                     <div className="mt-5 grid gap-2.5">
                       <div className="flex flex-wrap gap-3 text-base leading-6">
-                        <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[#f5f1e8]">
-                          {treatment.durationLabel}
-                        </span>
-                        <span
-                          className={cn(
-                            "rounded-full border px-3 py-1.5 font-medium",
-                            treatment.slug === "30-min-consultation"
-                              ? "border-[#8acfc7]/34 bg-[#8acfc7]/12 text-[#dcfbf7]"
-                              : "border-[#8f68bb]/40 bg-[#5e3a8c]/24 text-[#f0e3ff]"
-                          )}
-                        >
-                          {treatment.priceLabel}
-                        </span>
-                        <span className="rounded-full border border-[#666666]/40 bg-[#666666]/10 px-3 py-1.5 text-[#dedede]">
-                          {treatment.supportCue}
-                        </span>
+                        {chips.map((chip) => (
+                          <span
+                            key={chip}
+                            className={cn(
+                              "rounded-full border px-3 py-1.5",
+                              chip === treatment.priceLabel
+                                ? treatment.slug === "clarity-cut-call"
+                                  ? "border-[#8acfc7]/34 bg-[#8acfc7]/12 font-medium text-[#dcfbf7]"
+                                  : "border-[#8f68bb]/40 bg-[#5e3a8c]/24 font-medium text-[#f0e3ff]"
+                                : chip === treatment.durationLabel
+                                  ? "border-white/10 bg-white/[0.05] text-[#f5f1e8]"
+                                  : "border-[#666666]/40 bg-[#666666]/10 text-[#dedede]"
+                            )}
+                          >
+                            {chip}
+                          </span>
+                        ))}
                       </div>
                       {treatment.secondaryPriceLabel ? (
                         <div className="rounded-[1rem] border border-[#8f68bb]/40 bg-[linear-gradient(135deg,rgba(94,58,140,0.24),rgba(0,0,0,0.2))] px-4 py-3 text-base font-medium leading-7 text-[#f3e8ff]">
@@ -534,40 +571,71 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
                       ) : null}
                     </div>
 
-                    <p className={cn("mt-5 text-base leading-[1.48] text-[#cfd7d8]", isSelected && "text-[#e7e0ef]")}>{treatment.description}</p>
+                    <p
+                      className={cn(
+                        "mt-5 text-base leading-[1.48] text-[#cfd7d8]",
+                        isSelected && "text-[#e7e0ef]",
+                        isFeaturedRoute && !isSelected && "text-[#ddd7e8]"
+                      )}
+                    >
+                      {treatment.description}
+                    </p>
 
                     <div
                       className={cn(
                         "mt-6 rounded-[1.45rem] border p-5",
                         isSelected
                           ? "border-[#8f68bb]/40 bg-[linear-gradient(180deg,rgba(94,58,140,0.18),rgba(0,0,0,0.28))]"
+                          : isFeaturedRoute
+                            ? "border-[#8f68bb]/28 bg-[linear-gradient(180deg,rgba(94,58,140,0.12),rgba(0,0,0,0.22))]"
                           : "border-white/10 bg-black/20"
                       )}
                     >
-                      <div className={cn("space-y-2.5 text-base leading-[1.42] text-[#edf4f2]", isSelected && "text-[#f6efff]")}>
+                      <div
+                        className={cn(
+                          "space-y-2.5 text-base leading-[1.42] text-[#edf4f2]",
+                          isSelected && "text-[#f6efff]",
+                          isFeaturedRoute && !isSelected && "text-[#f0ebf8]"
+                        )}
+                      >
                         {treatment.bullets.map((bullet) => (
                           <div key={bullet} className="flex items-start gap-3">
-                            <div className={cn("mt-2 h-2 w-2 rounded-full bg-[#8acfc7]", isSelected && "bg-[#caaeff] shadow-[0_0_14px_rgba(202,174,255,0.8)]")} />
+                            <div
+                              className={cn(
+                                "mt-2 h-2 w-2 rounded-full bg-[#8acfc7]",
+                                isSelected && "bg-[#caaeff] shadow-[0_0_14px_rgba(202,174,255,0.8)]",
+                                isFeaturedRoute && !isSelected && "bg-[#b79ad8] shadow-[0_0_10px_rgba(183,154,216,0.45)]"
+                              )}
+                            />
                             <span>{bullet}</span>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <Button
-                      className={cn(
-                        "mt-8 h-12 min-h-[44px] w-full rounded-full border px-5 text-base transition duration-200",
-                        isSelected
-                          ? "border-[#8acfc7]/60 bg-[linear-gradient(135deg,#73cbc3,#c5efea)] text-[#071018] shadow-[0_14px_36px_rgba(76,195,187,0.2)] hover:brightness-105"
-                          : "border-white/14 bg-white/[0.06] text-[#f5f1e8] hover:border-[#8acfc7]/45 hover:bg-white/[0.1]"
-                      )}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleTreatmentSelectAndScroll(treatment);
-                      }}
-                    >
-                      {treatment.cta}
-                    </Button>
+                    {isBookable ? (
+                      <Button
+                        className={cn(
+                          "mt-8 h-12 min-h-[44px] w-full rounded-full border px-5 text-base transition duration-200",
+                          isSelected
+                            ? "border-[#8acfc7]/60 bg-[linear-gradient(135deg,#73cbc3,#c5efea)] text-[#071018] shadow-[0_14px_36px_rgba(76,195,187,0.2)] hover:brightness-105"
+                            : "border-white/14 bg-white/[0.06] text-[#f5f1e8] hover:border-[#8acfc7]/45 hover:bg-white/[0.1]"
+                        )}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleTreatmentSelectAndScroll(treatment as ActiveTreatment);
+                        }}
+                      >
+                        {treatment.cta}
+                      </Button>
+                    ) : (
+                      <a
+                        href={treatment.href}
+                        className="mt-8 inline-flex h-12 min-h-[44px] w-full items-center justify-center rounded-full border border-[#8acfc7]/60 bg-[linear-gradient(135deg,#73cbc3,#c5efea)] px-5 text-base text-[#071018] shadow-[0_14px_36px_rgba(76,195,187,0.2)] transition duration-200 hover:brightness-105"
+                      >
+                        {treatment.cta}
+                      </a>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -673,9 +741,11 @@ export default function BarbershopPageClient({ campaign }: { campaign: string | 
                     <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[#f5f1e8]">
                       {selectedTreatment.durationLabel}
                     </span>
-                    <span className="rounded-full border border-[#5e3a8c]/34 bg-[#5e3a8c]/14 px-3 py-1.5 text-[#eadfff]">
-                      {selectedTreatment.priceLabel}
-                    </span>
+                    {selectedTreatment.priceLabel ? (
+                      <span className="rounded-full border border-[#5e3a8c]/34 bg-[#5e3a8c]/14 px-3 py-1.5 text-[#eadfff]">
+                        {selectedTreatment.priceLabel}
+                      </span>
+                    ) : null}
                     {selectedTreatment.secondaryPriceLabel ? (
                       <span className="rounded-full border border-[#8acfc7]/22 bg-[#8acfc7]/10 px-3 py-1.5 text-[#dff7f4]">
                         {selectedTreatment.secondaryPriceLabel}

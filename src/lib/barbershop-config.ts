@@ -28,7 +28,7 @@ type StaticConfig = {
 };
 
 export const BARBERSHOP_PRICING_DEFAULTS: Record<string, StaticConfig> = {
-  "30-min-consultation": {
+  "clarity-cut-call": {
     mode: "free",
     displayPrice: 0,
     currency: "SEK",
