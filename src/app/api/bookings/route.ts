@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
         cc: 'mikael@techchange.io',
         subject,
         html,
-        attachments: icsAttachment ? [icsAttachment] : undefined,
+        attachments: icsContent ? [{ filename: "booking.ics", content: Buffer.from(icsContent).toString("base64") }] : undefined,
       })
     } catch (emailError) {
       console.error('Email send error (non-fatal):', emailError)
