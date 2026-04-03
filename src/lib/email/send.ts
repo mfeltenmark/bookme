@@ -17,6 +17,7 @@ interface EmailAttachment {
 
 interface SendEmailParams {
   to: string;
+  cc?: string;
   subject: string;
   html: string;
   replyTo?: string;
@@ -30,6 +31,7 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
     const { error } = await getResend().emails.send({
       from,
       to: params.to,
+      cc: params.cc,
       subject: params.subject,
       html: params.html,
       replyTo: params.replyTo,

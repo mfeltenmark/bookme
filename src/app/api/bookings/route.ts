@@ -231,14 +231,10 @@ export async function POST(request: NextRequest) {
       const { sendEmail } = await import('@/lib/email/send')
       await sendEmail({
         to: email,
+        cc: 'mikael@techchange.io',
         subject,
         html,
-        attachments: [
-          {
-            filename: 'booking.ics',
-            content: Buffer.from(icsContent).toString('base64'),
-          },
-        ],
+        attachments: icsAttachment ? [icsAttachment] : undefined,
       })
     } catch (emailError) {
       console.error('Email send error (non-fatal):', emailError)
